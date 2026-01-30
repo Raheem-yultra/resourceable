@@ -44,9 +44,16 @@ export async function POST(req: NextRequest) {
     const validatedData = serviceSchema.parse(body);
 
     const service = await serviceService.createService(business.id, {
-      ...validatedData,
-      serviceTypes: validatedData.serviceTypes as any,
-      disabilityTypes: validatedData.disabilityTypes as any,
+      name: validatedData.name,
+      description: validatedData.description,
+      ageGroups: validatedData.ageGroups as any,
+      ageMin: validatedData.ageMin,
+      ageMax: validatedData.ageMax,
+      priceRange: validatedData.priceRange as any,
+      priceMin: validatedData.priceMin,
+      priceMax: validatedData.priceMax,
+      insuranceAccepted: validatedData.insuranceAccepted,
+      isAvailable: validatedData.isAvailable,
     });
 
     return NextResponse.json({ service }, { status: 201 });

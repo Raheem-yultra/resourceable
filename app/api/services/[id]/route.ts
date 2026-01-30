@@ -49,9 +49,16 @@ export async function PUT(
     const validatedData = serviceSchema.partial().parse(body);
 
     const updatedService = await serviceService.updateService(params.id, {
-      ...validatedData,
-      serviceTypes: validatedData.serviceTypes as any,
-      disabilityTypes: validatedData.disabilityTypes as any,
+      name: validatedData.name,
+      description: validatedData.description,
+      ageGroups: validatedData.ageGroups as any,
+      ageMin: validatedData.ageMin,
+      ageMax: validatedData.ageMax,
+      priceRange: validatedData.priceRange as any,
+      priceMin: validatedData.priceMin,
+      priceMax: validatedData.priceMax,
+      insuranceAccepted: validatedData.insuranceAccepted,
+      isAvailable: validatedData.isAvailable,
     });
 
     return NextResponse.json({ service: updatedService });

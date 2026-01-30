@@ -28,13 +28,14 @@ export const businessProfileSchema = z.object({
 export const serviceSchema = z.object({
   name: z.string().min(2, 'Service name is required'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
-  serviceTypes: z.array(z.string()).min(1, 'Select at least one service type'),
-  disabilityTypes: z.array(z.string()).min(1, 'Select at least one disability type'),
-  ageGroupMin: z.number().min(0).optional(),
-  ageGroupMax: z.number().max(120).optional(),
-  cost: z.string().optional(),
+  ageGroups: z.array(z.string()).optional(),
+  ageMin: z.number().min(0).optional(),
+  ageMax: z.number().max(120).optional(),
+  priceRange: z.string().optional(),
+  priceMin: z.number().optional(),
+  priceMax: z.number().optional(),
   insuranceAccepted: z.boolean().default(false),
-  availableSlots: z.boolean().default(true),
+  isAvailable: z.boolean().default(true),
 });
 
 export const messageSchema = z.object({
