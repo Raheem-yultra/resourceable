@@ -1,6 +1,14 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy initialization to avoid build-time errors when env var is not available
+let resend: Resend | null = null;
+
+function getResendClient(): Resend {
+  if (!resend) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resend;
+}
 
 // HTML escape function to prevent XSS in emails
 function escapeHtml(text: string): string {
@@ -60,7 +68,7 @@ export async function sendContactInquiryEmail({
     const safePhone = customerPhone ? escapeHtml(customerPhone) : '';
     const safeMessage = escapeHtml(message);
     
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResendClient().emails.send({
       from: 'ResourceAble <onboarding@resend.dev>',
       to: businessEmail,
       replyTo: 'raheemrehman22005@gmail.com',
@@ -210,7 +218,7 @@ export async function sendCustomerConfirmationEmail({
     const safeEmail = businessEmail ? escapeHtml(businessEmail) : '';
     const safeWebsite = businessWebsite ? escapeHtml(businessWebsite) : '';
     
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResendClient().emails.send({
       from: 'ResourceAble <onboarding@resend.dev>',
       to: customerEmail,
       replyTo: 'raheemrehman22005@gmail.com',
@@ -359,7 +367,7 @@ export async function sendPasswordResetEmail({
   try {
     const safeName = escapeHtml(name);
     
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResendClient().emails.send({
       from: 'ResourceAble <onboarding@resend.dev>',
       to: email,
       replyTo: 'raheemrehman22005@gmail.com',

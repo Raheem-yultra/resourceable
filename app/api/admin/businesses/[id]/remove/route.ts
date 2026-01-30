@@ -4,7 +4,15 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy initialization to avoid build-time errors when env var is not available
+let resend: Resend | null = null;
+
+function getResendClient(): Resend {
+  if (!resend) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resend;
+}
 
 export async function DELETE(
   request: NextRequest,
@@ -46,7 +54,7 @@ export async function DELETE(
 
     // Send notification email before deletion
     try {
-      await resend.emails.send({
+      await getResendClient().emails.send({
         from: 'ResourceAble <onboarding@resend.dev>',
         to: business.user.email,
         replyTo: 'raheemrehman22005@gmail.com',
