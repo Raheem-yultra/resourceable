@@ -1,17 +1,18 @@
 import { prisma } from '@/lib/prisma';
-import { ServiceType, Disability } from '@prisma/client';
+import { AgeGroup, PriceRange } from '@prisma/client';
 
 export const serviceService = {
   async createService(businessId: string, data: {
     name: string;
     description: string;
-    serviceTypes: ServiceType[];
-    disabilityTypes: Disability[];
-    ageGroupMin?: number;
-    ageGroupMax?: number;
-    cost?: string;
+    ageGroups?: AgeGroup[];
+    ageMin?: number;
+    ageMax?: number;
+    priceRange?: PriceRange;
+    priceMin?: number;
+    priceMax?: number;
     insuranceAccepted?: boolean;
-    availableSlots?: boolean;
+    isAvailable?: boolean;
   }) {
     const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     
@@ -21,11 +22,14 @@ export const serviceService = {
         name: data.name,
         description: data.description,
         slug,
-        ageGroupMin: data.ageGroupMin,
-        ageGroupMax: data.ageGroupMax,
-        cost: data.cost,
+        ageGroups: data.ageGroups || [],
+        ageMin: data.ageMin,
+        ageMax: data.ageMax,
+        priceRange: data.priceRange,
+        priceMin: data.priceMin,
+        priceMax: data.priceMax,
         insuranceAccepted: data.insuranceAccepted,
-        availableSlots: data.availableSlots,
+        isAvailable: data.isAvailable,
       },
       include: {
         business: {
@@ -74,13 +78,14 @@ export const serviceService = {
   async updateService(id: string, data: Partial<{
     name: string;
     description: string;
-    serviceTypes: ServiceType[];
-    disabilityTypes: DisabilityType[];
-    ageGroupMin: number;
-    ageGroupMax: number;
-    cost: string;
+    ageGroups: AgeGroup[];
+    ageMin: number;
+    ageMax: number;
+    priceRange: PriceRange;
+    priceMin: number;
+    priceMax: number;
     insuranceAccepted: boolean;
-    availableSlots: boolean;
+    isAvailable: boolean;
   }>) {
     return prisma.service.update({
       where: { id },
@@ -97,16 +102,14 @@ export const serviceService = {
   async searchServices(params: {
     query?: string;
     zipCode?: string;
-    disabilityType?: DisabilityType;
-    serviceType?: ServiceType;
+    ageGroup?: AgeGroup;
     page?: number;
     limit?: number;
   }) {
     const {
       query,
       zipCode,
-      disabilityType,
-      serviceType,
+      ageGroup,
       page = 1,
       limit = 10,
     } = params;
@@ -117,6 +120,7 @@ export const serviceService = {
       business: {
         verificationStatus: 'APPROVED',
       },
+      isActive: true,
     };
 
     // Search by name or description
@@ -140,17 +144,10 @@ export const serviceService = {
       };
     }
 
-    // Filter by disability type
-    if (disabilityType) {
-      where.disabilityTypes = {
-        has: disabilityType,
-      };
-    }
-
-    // Filter by service type
-    if (serviceType) {
-      where.serviceTypes = {
-        has: serviceType,
+    // Filter by age group
+    if (ageGroup) {
+      where.ageGroups = {
+        has: ageGroup,
       };
     }
 
