@@ -74,8 +74,14 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Include error message in development/debug
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        // Temporary: include message to debug production issue
+        debug: error.message 
+      },
       { status: 500 }
     );
   }
