@@ -69,10 +69,22 @@ export function Navbar() {
           </div>
 
           {/* Right side: User Menu + Mobile Toggle */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Mobile Menu Toggle - Show first on mobile */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden p-2 min-w-[44px] min-h-[44px]"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+
             {/* Desktop User Menu */}
             {isLoading ? (
-              <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+              <div className="hidden sm:block h-8 w-8 rounded-full bg-muted animate-pulse" />
             ) : session ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -149,7 +161,7 @@ export function Navbar() {
               </DropdownMenu>
             ) : (
               /* Desktop auth buttons - hidden on mobile */
-              <div className="hidden sm:flex items-center space-x-2">
+              <div className="hidden md:flex items-center gap-2">
                 <Button asChild variant="ghost" size="sm">
                   <Link href="/auth/signin">Sign In</Link>
                 </Button>
@@ -158,28 +170,17 @@ export function Navbar() {
                 </Button>
               </div>
             )}
-
-            {/* Mobile Menu Toggle */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:hidden p-2"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={mobileMenuOpen}
-            >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
           </div>
         </div>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t bg-background pb-4 animate-in slide-in-from-top-2 duration-200">
-            <div className="flex flex-col space-y-1 pt-4">
+            <div className="flex flex-col pt-3">
+              {/* Navigation Links */}
               <Link
                 href="/search"
-                className="flex items-center px-4 py-3 text-sm font-medium text-foreground hover:bg-muted rounded-lg mx-2 transition-colors"
+                className="flex items-center px-4 py-3 text-sm font-medium text-foreground hover:bg-muted rounded-lg mx-2 transition-colors min-h-[48px]"
                 onClick={closeMobileMenu}
               >
                 <Search className="mr-3 h-4 w-4" />
@@ -189,7 +190,7 @@ export function Navbar() {
               {session?.user.role === 'BUSINESS' && (
                 <Link
                   href="/business/dashboard"
-                  className="flex items-center px-4 py-3 text-sm font-medium text-foreground hover:bg-muted rounded-lg mx-2 transition-colors"
+                  className="flex items-center px-4 py-3 text-sm font-medium text-foreground hover:bg-muted rounded-lg mx-2 transition-colors min-h-[48px]"
                   onClick={closeMobileMenu}
                 >
                   <Building2 className="mr-3 h-4 w-4" />
@@ -200,7 +201,7 @@ export function Navbar() {
               {session?.user.role === 'ADMIN' && (
                 <Link
                   href="/admin"
-                  className="flex items-center px-4 py-3 text-sm font-medium text-foreground hover:bg-muted rounded-lg mx-2 transition-colors"
+                  className="flex items-center px-4 py-3 text-sm font-medium text-foreground hover:bg-muted rounded-lg mx-2 transition-colors min-h-[48px]"
                   onClick={closeMobileMenu}
                 >
                   <Shield className="mr-3 h-4 w-4" />
@@ -211,7 +212,7 @@ export function Navbar() {
               {session && (
                 <Link
                   href="/messages"
-                  className="flex items-center px-4 py-3 text-sm font-medium text-foreground hover:bg-muted rounded-lg mx-2 transition-colors"
+                  className="flex items-center px-4 py-3 text-sm font-medium text-foreground hover:bg-muted rounded-lg mx-2 transition-colors min-h-[48px]"
                   onClick={closeMobileMenu}
                 >
                   <MessageSquare className="mr-3 h-4 w-4" />
@@ -219,13 +220,13 @@ export function Navbar() {
                 </Link>
               )}
 
-              {/* Mobile Auth Buttons */}
+              {/* Mobile Auth Buttons - Inline */}
               {!session && !isLoading && (
-                <div className="flex flex-col space-y-2 px-4 pt-4 border-t mt-2">
-                  <Button asChild variant="outline" className="w-full justify-center">
+                <div className="flex items-center gap-2 px-4 pt-4 border-t mt-3">
+                  <Button asChild variant="outline" className="flex-1 min-h-[44px]">
                     <Link href="/auth/signin" onClick={closeMobileMenu}>Sign In</Link>
                   </Button>
-                  <Button asChild className="w-full justify-center">
+                  <Button asChild className="flex-1 min-h-[44px]">
                     <Link href="/auth/signup" onClick={closeMobileMenu}>Get Started</Link>
                   </Button>
                 </div>
@@ -233,10 +234,10 @@ export function Navbar() {
 
               {/* Mobile Sign Out */}
               {session && (
-                <div className="px-4 pt-4 border-t mt-2">
+                <div className="px-4 pt-4 border-t mt-3">
                   <Button
                     variant="outline"
-                    className="w-full justify-center text-red-600 border-red-200 hover:bg-red-50"
+                    className="w-full min-h-[44px] justify-center text-red-600 border-red-200 hover:bg-red-50"
                     onClick={() => {
                       closeMobileMenu();
                       signOut({ callbackUrl: '/' });
