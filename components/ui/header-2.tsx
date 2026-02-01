@@ -151,18 +151,18 @@ export function Header() {
 							</Link>
 						))}
 					</div>
-					<div className="flex flex-col gap-2">
+					<div className="flex flex-row gap-2">
 						{session ? (
-							<Button variant="outline" className="w-full" asChild>
-								<Link href="/auth/signout">Sign Out</Link>
+							<Button variant="outline" className="flex-1 min-h-[44px]" asChild>
+								<Link href="/auth/signout" onClick={() => setOpen(false)}>Sign Out</Link>
 							</Button>
 						) : (
 							<>
-								<Button variant="outline" className="w-full" asChild>
-									<Link href="/auth/signin">Sign In</Link>
+								<Button variant="outline" className="flex-1 min-h-[44px]" asChild>
+									<Link href="/auth/signin" onClick={() => setOpen(false)}>Sign In</Link>
 								</Button>
-								<Button className="w-full" asChild>
-									<Link href="/auth/signup">Get Started</Link>
+								<Button className="flex-1 min-h-[44px]" asChild>
+									<Link href="/auth/signup" onClick={() => setOpen(false)}>Get Started</Link>
 								</Button>
 							</>
 						)}
