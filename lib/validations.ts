@@ -1,11 +1,31 @@
 import { z } from 'zod';
 
+// Phone number validation helper
+const phoneRegex = /^(\+1)?[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
+
 export const signUpSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(2, 'Name must be at least 2 characters').optional(),
   role: z.enum(['USER', 'BUSINESS']).default('USER'),
   zipCode: z.string().optional(),
+  phone: z.string().optional(),
+}).refine((data) => {
+  // Phone is required for BUSINESS accounts
+  if (data.role === 'BUSINESS') {
+    if (!data.phone || data.phone.trim() === '') {
+      return false;
+    }
+    return phoneRegex.test(data.phone);
+  }
+  // Phone is optional for USER accounts, but must be valid if provided
+  if (data.phone && data.phone.trim() !== '') {
+    return phoneRegex.test(data.phone);
+  }
+  return true;
+}, {
+  message: 'Valid phone number is required for business accounts',
+  path: ['phone'],
 });
 
 export const signInSchema = z.object({

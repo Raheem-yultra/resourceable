@@ -221,7 +221,7 @@ export async function sendCustomerConfirmationEmail({
     const { data, error } = await getResendClient().emails.send({
       from: 'ResourceAble <onboarding@resend.dev>',
       to: customerEmail,
-      replyTo: 'raheemrehman22005@gmail.com',
+      replyTo: 'raheemrehman2005@gmail.com',
       subject: `We've contacted ${safeBusiness} on your behalf`,
       html: `
         <!DOCTYPE html>
@@ -470,6 +470,124 @@ Thank you for using ResourceAble - Helping connect families with disability serv
     return { success: true, data };
   } catch (error) {
     console.error('Password reset email failed:', error);
+    throw error;
+  }
+}
+
+// Email Verification
+interface EmailVerificationProps {
+  email: string;
+  name: string;
+  verificationUrl: string;
+}
+
+export async function sendVerificationEmail({
+  email,
+  name,
+  verificationUrl,
+}: EmailVerificationProps) {
+  try {
+    const safeName = escapeHtml(name || 'there');
+    const safeEmail = escapeHtml(email);
+
+    const { data, error } = await getResendClient().emails.send({
+      from: 'ResourceAble <onboarding@resend.dev>',
+      to: email,
+      subject: 'Verify your email - ResourceAble',
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
+              .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+              .button { display: inline-block; background: #667eea; color: white !important; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; }
+              .footer { background: #f3f4f6; padding: 20px; text-align: center; color: #6b7280; font-size: 14px; border-radius: 0 0 10px 10px; }
+              .info-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 8px; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1 style="margin: 0; font-size: 28px;">✉️ Verify Your Email</h1>
+                <p style="margin: 10px 0 0 0; opacity: 0.9;">Welcome to ResourceAble!</p>
+              </div>
+              
+              <div class="content">
+                <p style="font-size: 16px; margin-top: 0;">Hello ${safeName},</p>
+                
+                <p>Thank you for creating an account with ResourceAble! To complete your registration and start using our platform, please verify your email address.</p>
+                
+                <p>Click the button below to verify your email. This link will expire in <strong>24 hours</strong>.</p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${verificationUrl}" class="button">Verify My Email</a>
+                </div>
+                
+                <p style="font-size: 14px; color: #6b7280;">
+                  Or copy and paste this link into your browser:<br>
+                  <a href="${verificationUrl}" style="color: #667eea; word-break: break-all;">${verificationUrl}</a>
+                </p>
+                
+                <div class="info-box">
+                  <p style="margin: 0; color: #1e40af;">
+                    <strong>📌 Why verify?</strong><br>
+                    Email verification helps us ensure the security of your account and allows us to send you important updates about your services.
+                  </p>
+                </div>
+                
+                <div style="background: #fef3c7; border: 1px solid #fbbf24; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                  <p style="margin: 0; color: #92400e;">
+                    <strong>⚠️ Didn't create an account?</strong><br>
+                    If you didn't sign up for ResourceAble, you can safely ignore this email.
+                  </p>
+                </div>
+              </div>
+
+              <div class="footer">
+                <p style="margin: 0 0 10px 0;">Thank you for joining ResourceAble</p>
+                <p style="margin: 0; font-size: 12px;">
+                  Helping connect families with disability services
+                </p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+      text: `
+Verify Your Email - ResourceAble
+
+Hello ${safeName},
+
+Thank you for creating an account with ResourceAble! To complete your registration and start using our platform, please verify your email address.
+
+Click the link below to verify your email. This link will expire in 24 hours.
+
+${verificationUrl}
+
+WHY VERIFY?
+Email verification helps us ensure the security of your account and allows us to send you important updates about your services.
+
+DIDN'T CREATE AN ACCOUNT?
+If you didn't sign up for ResourceAble, you can safely ignore this email.
+
+---
+Thank you for joining ResourceAble - Helping connect families with disability services.
+      `.trim(),
+    });
+
+    if (error) {
+      console.error('Resend verification email error:', error);
+      throw new Error('Failed to send verification email');
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Verification email failed:', error);
     throw error;
   }
 }

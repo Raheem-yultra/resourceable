@@ -2,13 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Lock, User, MapPin, Building2 } from 'lucide-react';
+import { Mail, Lock, User, MapPin, Building2, Phone } from 'lucide-react';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -21,6 +20,7 @@ export default function SignUpPage() {
     confirmPassword: '',
     name: '',
     zipCode: '',
+    phone: '',
     role: roleParam === 'BUSINESS' ? 'BUSINESS' : 'USER',
   });
   const [error, setError] = useState('');
@@ -29,6 +29,7 @@ export default function SignUpPage() {
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
+    const phoneRegex = /^(\+1)?[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
     
     if (!formData.name.trim()) {
       errors.name = 'Name is required';
@@ -40,6 +41,17 @@ export default function SignUpPage() {
       errors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = 'Please enter a valid email address';
+    }
+
+    // Phone validation - required for business, optional for users
+    if (formData.role === 'BUSINESS') {
+      if (!formData.phone.trim()) {
+        errors.phone = 'Phone number is required for business accounts';
+      } else if (!phoneRegex.test(formData.phone)) {
+        errors.phone = 'Please enter a valid phone number';
+      }
+    } else if (formData.phone.trim() && !phoneRegex.test(formData.phone)) {
+      errors.phone = 'Please enter a valid phone number';
     }
     
     if (!formData.password) {
@@ -79,6 +91,7 @@ export default function SignUpPage() {
           name: formData.name,
           role: formData.role,
           zipCode: formData.zipCode,
+          phone: formData.phone,
         }),
       });
 
@@ -96,26 +109,8 @@ export default function SignUpPage() {
         return;
       }
 
-      // Automatically sign in the user after successful registration
-      const signInResult = await signIn('credentials', {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
-      });
-
-      if (signInResult?.error) {
-        setError('Account created but sign in failed. Please sign in manually.');
-        setLoading(false);
-        router.push('/auth/signin?message=Account created successfully. Please sign in.');
-        return;
-      }
-
-      // Redirect based on role
-      if (formData.role === 'BUSINESS') {
-        router.push('/business/dashboard');
-      } else {
-        router.push('/search');
-      }
+      // Redirect to verify email page
+      router.push('/auth/verify-email');
     } catch (err) {
       setError('An error occurred. Please try again.');
       setLoading(false);
@@ -225,6 +220,34 @@ export default function SignUpPage() {
                 {formData.role === 'BUSINESS' 
                   ? 'Required for service location visibility'
                   : 'Helps us show relevant services in your area'
+                }
+              </p>
+            </div>
+
+            {/* Phone Field */}
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-sm font-medium">
+                Phone Number {formData.role === 'USER' && '(Optional)'}
+              </Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="(555) 123-4567"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="pl-10"
+                  required={formData.role === 'BUSINESS'}
+                />
+              </div>
+              {fieldErrors.phone && (
+                <p className="text-xs text-red-600">{fieldErrors.phone}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {formData.role === 'BUSINESS' 
+                  ? 'Required for customers to contact you'
+                  : 'Optional - for service providers to reach you'
                 }
               </p>
             </div>

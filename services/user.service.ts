@@ -8,6 +8,9 @@ export const userService = {
     password: string;
     name?: string;
     role?: UserRole;
+    phone?: string;
+    emailVerificationToken?: string;
+    emailVerificationExpiry?: Date;
   }) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
@@ -17,6 +20,9 @@ export const userService = {
         password: hashedPassword,
         name: data.name,
         role: data.role || 'USER',
+        phone: data.phone,
+        emailVerificationToken: data.emailVerificationToken,
+        emailVerificationExpiry: data.emailVerificationExpiry,
       },
     });
 

@@ -40,6 +40,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid credentials');
         }
 
+        // Check if email is verified
+        if (!user.emailVerified) {
+          throw new Error('Please verify your email before signing in. Check your inbox for the verification link.');
+        }
+
         const isPasswordValid = await bcrypt.compare(
           credentials.password,
           user.password

@@ -9,30 +9,33 @@ datasource db {
 }
 
 model User {
-  id               String          @id @default(cuid())
-  email            String          @unique
-  name             String?
-  password         String
-  role             UserRole        @default(USER)
-  emailVerified    DateTime?
-  image            String?
-  phone            String?
-  isActive         Boolean         @default(true)
-  lastLoginAt      DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  resetToken       String?         @unique
-  resetTokenExpiry DateTime?
-  business         Business?
-  favorites        Favorite[]
-  receivedMessages Message[]       @relation("ReceivedMessages")
-  sentMessages     Message[]       @relation("SentMessages")
-  reviews          Review[]
-  searchHistory    SearchHistory[]
+  id                        String          @id @default(cuid())
+  email                     String          @unique
+  name                      String?
+  password                  String
+  role                      UserRole        @default(USER)
+  emailVerified             DateTime?
+  emailVerificationToken    String?         @unique
+  emailVerificationExpiry   DateTime?
+  image                     String?
+  phone                     String?
+  isActive                  Boolean         @default(true)
+  lastLoginAt               DateTime?
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+  resetToken                String?         @unique
+  resetTokenExpiry          DateTime?
+  business                  Business?
+  favorites                 Favorite[]
+  receivedMessages          Message[]       @relation("ReceivedMessages")
+  sentMessages              Message[]       @relation("SentMessages")
+  reviews                   Review[]
+  searchHistory             SearchHistory[]
 
   @@index([email])
   @@index([role])
   @@index([resetToken])
+  @@index([emailVerificationToken])
 }
 
 model Business {
