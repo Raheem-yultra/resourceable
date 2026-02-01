@@ -28,7 +28,14 @@ type SearchParams = z.infer<typeof searchParamsSchema>;
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const session = await getServerSession(authOptions);
+    
+    // Try to get session, but don't fail if auth is misconfigured
+    let session = null;
+    try {
+      session = await getServerSession(authOptions);
+    } catch (authError) {
+      console.warn('Auth session check failed, continuing without session:', authError);
+    }
     
     // Parse and validate query parameters
     // Handle multiple disability/serviceType IDs
