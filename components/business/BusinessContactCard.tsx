@@ -32,10 +32,10 @@ export function BusinessContactCard({ business, session, canContact, firstServic
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Contact Information</CardTitle>
+      <CardHeader className="px-4 sm:px-6">
+        <CardTitle className="text-lg sm:text-xl">Contact Information</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-4 sm:px-6">
         {/* Address */}
         {business.address && (
           <div>
@@ -117,7 +117,7 @@ export function BusinessContactCard({ business, session, canContact, firstServic
 
         {/* Contact Buttons */}
         {canContact && (
-          <div className="pt-4 space-y-2">
+          <div className="pt-4 space-y-3">
             {/* Send Inquiry Button */}
             <ContactModal
               serviceId={firstServiceId || business.id}
@@ -128,7 +128,7 @@ export function BusinessContactCard({ business, session, canContact, firstServic
               email={business.email || undefined}
               website={business.website || undefined}
             >
-              <Button variant="default" className="w-full" size="lg">
+              <Button variant="default" className="w-full min-h-[48px] text-sm sm:text-base" size="lg">
                 📝 Send Inquiry
               </Button>
             </ContactModal>
@@ -136,7 +136,7 @@ export function BusinessContactCard({ business, session, canContact, firstServic
             {/* Direct Message Button */}
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full min-h-[48px] text-sm sm:text-base"
               size="lg"
               onClick={() => {
                 router.push(`/messages/${business.userId}?message=Hi! I'm interested in learning more about your services.`);
@@ -152,7 +152,7 @@ export function BusinessContactCard({ business, session, canContact, firstServic
         )}
 
         {!session && (
-          <div className="pt-4 space-y-2">
+          <div className="pt-4 space-y-3">
             <ContactModal
               serviceId={firstServiceId || business.id}
               businessId={business.id}
@@ -162,7 +162,7 @@ export function BusinessContactCard({ business, session, canContact, firstServic
               email={business.email || undefined}
               website={business.website || undefined}
             >
-              <Button variant="default" className="w-full" size="lg">
+              <Button variant="default" className="w-full min-h-[48px] text-sm sm:text-base" size="lg">
                 📝 Send Inquiry
               </Button>
             </ContactModal>

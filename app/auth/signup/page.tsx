@@ -123,30 +123,30 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-muted px-4 py-12">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-muted px-4 py-6 sm:py-12">
       <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-3 text-center">
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-            <Building2 className="w-8 h-8 text-primary" />
+        <CardHeader className="space-y-3 text-center px-4 sm:px-6">
+          <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center">
+            <Building2 className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
           </div>
-          <CardTitle className="text-3xl font-bold">
+          <CardTitle className="text-2xl sm:text-3xl font-bold">
             {formData.role === 'BUSINESS' ? 'Business Sign Up' : 'Create Account'}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm sm:text-base">
             {formData.role === 'BUSINESS' 
               ? 'Register your business to list services on ResourceAble'
               : 'Join ResourceAble to connect with service providers'
             }
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <CardContent className="px-4 sm:px-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             {/* Role Toggle */}
             <div className="flex gap-2 p-1 bg-muted rounded-lg">
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, role: 'USER' })}
-                className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${
+                className={`flex-1 py-3 sm:py-2.5 rounded-md text-sm font-medium transition-all min-h-[44px] ${
                   formData.role === 'USER'
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
@@ -157,7 +157,7 @@ export default function SignUpPage() {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, role: 'BUSINESS' })}
-                className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all ${
+                className={`flex-1 py-3 sm:py-2.5 rounded-md text-sm font-medium transition-all min-h-[44px] ${
                   formData.role === 'BUSINESS'
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
@@ -276,7 +276,7 @@ export default function SignUpPage() {
             )}
 
             {/* Submit Button */}
-            <Button type="submit" className="w-full py-6 text-base font-semibold" disabled={loading}>
+            <Button type="submit" className="w-full min-h-[48px] sm:min-h-[52px] text-base font-semibold" disabled={loading}>
               {loading ? 'Creating Account...' : 'Create Account'}
             </Button>
 
@@ -293,7 +293,7 @@ export default function SignUpPage() {
             </div>
 
             {/* Sign In Link */}
-            <Button asChild variant="outline" className="w-full py-6">
+            <Button asChild variant="outline" className="w-full min-h-[48px]">
               <Link href="/auth/signin">Sign In</Link>
             </Button>
           </form>

@@ -91,61 +91,61 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b">
-        <div className="container mx-auto px-4 py-4">
-          <Link href="/search" className="text-primary hover:underline">
+        <div className="container mx-auto px-4 py-3 sm:py-4">
+          <Link href="/search" className="text-primary hover:underline text-sm sm:text-base inline-flex items-center min-h-[44px]">
             ← Back to Search
           </Link>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Business Header */}
             <Card>
-              <CardHeader>
-                <div className="flex items-start justify-between">
+              <CardHeader className="px-4 sm:px-6">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       {business.logo && (
                         <img
                           src={business.logo}
                           alt={business.businessName}
-                          className="w-16 h-16 rounded-lg object-cover"
+                          className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
                         />
                       )}
-                      <div>
-                        <CardTitle className="text-3xl mb-1">
+                      <div className="min-w-0">
+                        <CardTitle className="text-xl sm:text-3xl mb-1 break-words">
                           {business.businessName}
                         </CardTitle>
                         {business.businessType && (
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             {business.businessType}
                           </p>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 mt-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3">
                       {business.verificationStatus === 'APPROVED' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-                          ✓ Verified Provider
+                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 sm:px-3 py-1 text-xs font-medium text-green-700">
+                          ✓ Verified
                         </span>
                       )}
                       
                       {business.averageRating && (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 text-sm">
                           <span className="text-yellow-500">★</span>
                           <span className="font-semibold">{business.averageRating.toFixed(1)}</span>
-                          <span className="text-sm text-muted-foreground">
-                            ({business.totalReviews} {business.totalReviews === 1 ? 'review' : 'reviews'})
+                          <span className="text-xs sm:text-sm text-muted-foreground">
+                            ({business.totalReviews})
                           </span>
                         </div>
                       )}
 
                       {business.yearEstablished && (
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
                           Est. {business.yearEstablished}
                         </span>
                       )}
@@ -153,7 +153,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
                   </div>
 
                   {isOwner && (
-                    <Button asChild variant="outline">
+                    <Button asChild variant="outline" className="w-full sm:w-auto min-h-[44px]">
                       <Link href="/dashboard/business/edit">Edit Profile</Link>
                     </Button>
                   )}
@@ -161,9 +161,9 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
               </CardHeader>
 
               {business.description && (
-                <CardContent>
-                  <h3 className="font-semibold mb-2">About</h3>
-                  <p className="text-muted-foreground whitespace-pre-wrap">
+                <CardContent className="px-4 sm:px-6">
+                  <h3 className="font-semibold mb-2 text-sm sm:text-base">About</h3>
+                  <p className="text-muted-foreground whitespace-pre-wrap text-sm sm:text-base">
                     {business.description}
                   </p>
                 </CardContent>
@@ -244,7 +244,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
                         </p>
                       )}
 
-                      <div className="grid grid-cols-2 gap-4 mb-3 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-3 text-xs sm:text-sm">
                         {service.duration && (
                           <div>
                             <span className="font-medium">Duration:</span> {service.duration}

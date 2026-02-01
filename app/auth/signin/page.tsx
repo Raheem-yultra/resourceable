@@ -61,18 +61,18 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-muted px-4 py-12">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-muted px-4 py-8 sm:py-12">
       <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-3 text-center">
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-            <LogIn className="w-8 h-8 text-primary" />
+        <CardHeader className="space-y-3 text-center px-4 sm:px-6">
+          <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center">
+            <LogIn className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
           </div>
-          <CardTitle className="text-3xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl sm:text-3xl font-bold">Welcome Back</CardTitle>
+          <CardDescription className="text-sm sm:text-base">
             Sign in to your ResourceAble account
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 sm:px-6">
           {/* Success Message */}
           {message && (
             <div className="mb-6 p-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg">
@@ -131,7 +131,7 @@ export default function SignInPage() {
             )}
 
             {/* Submit Button */}
-            <Button type="submit" className="w-full py-6 text-base font-semibold" disabled={loading}>
+            <Button type="submit" className="w-full min-h-[48px] sm:min-h-[52px] text-base font-semibold" disabled={loading}>
               {loading ? 'Signing In...' : 'Sign In'}
             </Button>
 
@@ -148,13 +148,13 @@ export default function SignInPage() {
             </div>
 
             {/* Sign Up Links */}
-            <div className="grid grid-cols-2 gap-3">
-              <Button asChild variant="outline" className="py-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Button asChild variant="outline" className="min-h-[48px]">
                 <Link href="/auth/signup">
                   <span className="text-sm">Sign Up</span>
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="py-6">
+              <Button asChild variant="outline" className="min-h-[48px]">
                 <Link href="/auth/signup?role=BUSINESS">
                   <span className="text-sm">Business Signup</span>
                 </Link>
