@@ -134,7 +134,8 @@ export default function SearchPage() {
         }
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Search failed' }));
-        const errorMessage = errorData.error || 'Failed to load services. Please try again.';
+        // Show debug info if available
+        const errorMessage = errorData.debug || errorData.error || 'Failed to load services. Please try again.';
         setError(errorMessage);
         setServices([]);
         setTotalResults(0);

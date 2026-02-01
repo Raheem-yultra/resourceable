@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,73 +8,25 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ============================================
-// ENUMS
-// ============================================
-
-enum UserRole {
-  USER      // Regular users searching for services
-  BUSINESS  // Service providers
-  ADMIN     // Platform administrators
-}
-
-enum VerificationStatus {
-  PENDING   // Awaiting admin review
-  APPROVED  // Verified and visible
-  REJECTED  // Not approved
-}
-
-enum MessageStatus {
-  SENT
-  DELIVERED
-  READ
-}
-
-enum AgeGroup {
-  INFANT      // 0-2 years
-  TODDLER     // 2-5 years
-  CHILD       // 5-12 years
-  TEEN        // 12-18 years
-  ADULT       // 18+ years
-  ALL_AGES    // No age restriction
-}
-
-enum PriceRange {
-  FREE
-  LOW         // $0-$50
-  MEDIUM      // $50-$150
-  HIGH        // $150-$300
-  PREMIUM     // $300+
-  CONTACT     // Contact for pricing
-}
-
-// ============================================
-// USER & AUTHENTICATION
-// ============================================
-
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  password      String
-  role          UserRole  @default(USER)
-  emailVerified DateTime?
-  image         String?
-  phone         String?
-  isActive      Boolean   @default(true)
-  lastLoginAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Password Reset
-  resetToken       String?   @unique
+  id               String          @id @default(cuid())
+  email            String          @unique
+  name             String?
+  password         String
+  role             UserRole        @default(USER)
+  emailVerified    DateTime?
+  image            String?
+  phone            String?
+  isActive         Boolean         @default(true)
+  lastLoginAt      DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  resetToken       String?         @unique
   resetTokenExpiry DateTime?
-
-  // Relations
   business         Business?
-  sentMessages     Message[]        @relation("SentMessages")
-  receivedMessages Message[]        @relation("ReceivedMessages")
   favorites        Favorite[]
+  receivedMessages Message[]       @relation("ReceivedMessages")
+  sentMessages     Message[]       @relation("SentMessages")
   reviews          Review[]
   searchHistory    SearchHistory[]
 
@@ -86,66 +35,49 @@ model User {
   @@index([resetToken])
 }
 
-// ============================================
-// BUSINESS & SERVICES
-// ============================================
-
 model Business {
-  id                  String             @id @default(cuid())
-  userId              String             @unique
-  businessName        String
-  businessType        String?            // e.g., "Therapy Center", "Educational Facility"
-  description         String?            @db.Text
-  phone               String?
-  email               String?
-  website             String?
-  
-  // Address
-  address             String?
-  addressLine2        String?
-  city                String?
-  state               String?
-  zipCode             String?
-  country             String             @default("USA")
-  latitude            Float?
-  longitude           Float?
-  
-  // Business Details
-  logo                String?
-  coverImage          String?
-  yearEstablished     Int?
-  licenseNumber       String?
-  taxId               String?
-  
-  // Verification & Status
-  verificationStatus  VerificationStatus @default(PENDING)
-  verifiedAt          DateTime?
-  verifiedBy          String?            // Admin user ID
-  rejectionReason     String?            @db.Text
-  adminNotes          String?            @db.Text
-  reviewedBy          String?            // Admin user ID who reviewed
-  reviewedAt          DateTime?
-  isActive            Boolean            @default(true)
-  isFeatured          Boolean            @default(false)
-  
-  // Business Hours
-  hoursOfOperation    Json?              // Store as JSON: {monday: "9am-5pm", ...}
-  
-  // Metrics
-  viewCount           Int                @default(0)
-  contactCount        Int                @default(0)
-  averageRating       Float?
-  totalReviews        Int                @default(0)
-  
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-
-  // Relations
-  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  services            Service[]
+  id                   String               @id @default(cuid())
+  userId               String               @unique
+  businessName         String
+  businessType         String?
+  description          String?
+  phone                String?
+  email                String?
+  website              String?
+  address              String?
+  addressLine2         String?
+  city                 String?
+  state                String?
+  zipCode              String?
+  country              String               @default("USA")
+  latitude             Float?
+  longitude            Float?
+  logo                 String?
+  coverImage           String?
+  yearEstablished      Int?
+  licenseNumber        String?
+  taxId                String?
+  verificationStatus   VerificationStatus   @default(PENDING)
+  verifiedAt           DateTime?
+  verifiedBy           String?
+  rejectionReason      String?
+  adminNotes           String?
+  reviewedBy           String?
+  reviewedAt           DateTime?
+  isActive             Boolean              @default(true)
+  isFeatured           Boolean              @default(false)
+  hoursOfOperation     Json?
+  viewCount            Int                  @default(0)
+  contactCount         Int                  @default(0)
+  averageRating        Float?
+  totalReviews         Int                  @default(0)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   businessDisabilities BusinessDisability[]
-  favorites           Favorite[]
-  reviews             Review[]
+  favorites            Favorite[]
+  reviews              Review[]
+  services             Service[]
 
   @@index([userId])
   @@index([zipCode])
@@ -156,50 +88,37 @@ model Business {
 }
 
 model Service {
-  id                  String            @id @default(cuid())
+  id                  String              @id @default(cuid())
   businessId          String
   name                String
   slug                String
-  description         String            @db.Text
-  shortDescription    String?           @default("") @db.VarChar(200)
-  
-  // Pricing
-  priceRange          PriceRange        @default(CONTACT)
-  priceMin            Decimal?          @db.Decimal(10, 2)
-  priceMax            Decimal?          @db.Decimal(10, 2)
-  pricingDetails      String?           // Additional pricing info
-  
-  // Age & Capacity
+  description         String
+  shortDescription    String?             @default("") @db.VarChar(200)
+  priceRange          PriceRange          @default(CONTACT)
+  priceMin            Decimal?            @db.Decimal(10, 2)
+  priceMax            Decimal?            @db.Decimal(10, 2)
+  pricingDetails      String?
   ageGroups           AgeGroup[]
   ageMin              Int?
   ageMax              Int?
   capacity            Int?
   currentAvailability Int?
-  
-  // Service Details
-  duration            String?           // e.g., "1 hour", "Full day"
-  frequency           String?           // e.g., "Weekly", "Daily"
-  insuranceAccepted   Boolean           @default(false)
-  insuranceProviders  String[]          @default([])
-  languages           String[]          @default(["English"])
-  
-  // Status
-  isActive            Boolean           @default(true)
-  isAvailable         Boolean           @default(true)
+  duration            String?
+  frequency           String?
+  insuranceAccepted   Boolean             @default(false)
+  insuranceProviders  String[]            @default([])
+  languages           String[]            @default(["English"])
+  isActive            Boolean             @default(true)
+  isAvailable         Boolean             @default(true)
   startDate           DateTime?
   endDate             DateTime?
-  
-  // SEO & Metadata
   metaTitle           String?
   metaDescription     String?
-  
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-
-  // Relations
-  business            Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  serviceTypes        ServiceTypeMap[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  business            Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
   serviceDisabilities ServiceDisability[]
+  serviceTypes        ServiceTypeMap[]
 
   @@unique([businessId, slug])
   @@index([businessId])
@@ -207,25 +126,19 @@ model Service {
   @@index([priceRange])
 }
 
-// ============================================
-// DISABILITIES (Normalized)
-// ============================================
-
 model Disability {
-  id                  String              @id @default(cuid())
-  name                String              @unique
-  slug                String              @unique
-  description         String?             @db.Text
-  category            String?             // e.g., "Developmental", "Physical", "Cognitive"
-  commonSymptoms      String[]            @default([])
-  relatedConditions   String[]            @default([])
-  prevalence          String?             // e.g., "1 in 54 children"
-  isActive            Boolean             @default(true)
-  displayOrder        Int                 @default(0)
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-
-  // Relations
+  id                   String               @id @default(cuid())
+  name                 String               @unique
+  slug                 String               @unique
+  description          String?
+  category             String?
+  commonSymptoms       String[]             @default([])
+  relatedConditions    String[]             @default([])
+  prevalence           String?
+  isActive             Boolean              @default(true)
+  displayOrder         Int                  @default(0)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
   businessDisabilities BusinessDisability[]
   serviceDisabilities  ServiceDisability[]
 
@@ -234,15 +147,13 @@ model Disability {
   @@index([isActive, displayOrder])
 }
 
-// Junction table: Business serves multiple disabilities
 model BusinessDisability {
   id           String     @id @default(cuid())
   businessId   String
   disabilityId String
-  isPrimary    Boolean    @default(false) // Main specialty
-  experience   Int?       // Years of experience
+  isPrimary    Boolean    @default(false)
+  experience   Int?
   createdAt    DateTime   @default(now())
-
   business     Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
   disability   Disability @relation(fields: [disabilityId], references: [id], onDelete: Cascade)
 
@@ -252,54 +163,44 @@ model BusinessDisability {
   @@index([isPrimary])
 }
 
-// Junction table: Service addresses multiple disabilities
 model ServiceDisability {
   id           String     @id @default(cuid())
   serviceId    String
   disabilityId String
   isPrimary    Boolean    @default(false)
   createdAt    DateTime   @default(now())
-
-  service      Service    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   disability   Disability @relation(fields: [disabilityId], references: [id], onDelete: Cascade)
+  service      Service    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   @@unique([serviceId, disabilityId])
   @@index([serviceId])
   @@index([disabilityId])
 }
 
-// ============================================
-// SERVICE TYPES (Normalized)
-// ============================================
-
 model ServiceType {
-  id              String           @id @default(cuid())
-  name            String           @unique
-  slug            String           @unique
-  description     String?          @db.Text
-  category        String?          // e.g., "Clinical", "Educational", "Support"
-  icon            String?
-  isActive        Boolean          @default(true)
-  displayOrder    Int              @default(0)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-
-  // Relations
-  services        ServiceTypeMap[]
+  id           String           @id @default(cuid())
+  name         String           @unique
+  slug         String           @unique
+  description  String?
+  category     String?
+  icon         String?
+  isActive     Boolean          @default(true)
+  displayOrder Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  services     ServiceTypeMap[]
 
   @@index([slug])
   @@index([category])
   @@index([isActive, displayOrder])
 }
 
-// Junction table: Service has multiple types
 model ServiceTypeMap {
   id            String      @id @default(cuid())
   serviceId     String
   serviceTypeId String
   isPrimary     Boolean     @default(false)
   createdAt     DateTime    @default(now())
-
   service       Service     @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   serviceType   ServiceType @relation(fields: [serviceTypeId], references: [id], onDelete: Cascade)
 
@@ -308,28 +209,22 @@ model ServiceTypeMap {
   @@index([serviceTypeId])
 }
 
-// ============================================
-// MESSAGING SYSTEM
-// ============================================
-
 model Message {
-  id            String        @id @default(cuid())
-  senderId      String
-  receiverId    String
-  subject       String?
-  content       String        @db.Text
-  status        MessageStatus @default(SENT)
-  readAt        DateTime?
-  repliedAt     DateTime?
-  parentId      String?       // For message threads
-  attachments   String[]      @default([])
-  isArchived    Boolean       @default(false)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  // Relations
-  sender        User          @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver      User          @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  id          String        @id @default(cuid())
+  senderId    String
+  receiverId  String
+  subject     String?
+  content     String
+  status      MessageStatus @default(SENT)
+  readAt      DateTime?
+  repliedAt   DateTime?
+  parentId    String?
+  attachments String[]      @default([])
+  isArchived  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  receiver    User          @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender      User          @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([senderId])
   @@index([receiverId])
@@ -338,75 +233,96 @@ model Message {
   @@index([senderId, receiverId])
 }
 
-// ============================================
-// REVIEWS & RATINGS
-// ============================================
-
 model Review {
-  id            String    @id @default(cuid())
-  userId        String
-  businessId    String
-  rating        Int       // 1-5 stars
-  title         String?
-  content       String    @db.Text
-  pros          String[]  @default([])
-  cons          String[]  @default([])
-  isVerified    Boolean   @default(false)
-  isPublished   Boolean   @default(true)
-  helpfulCount  Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String   @id @default(cuid())
+  userId       String
+  businessId   String
+  rating       Int
+  title        String?
+  content      String
+  pros         String[] @default([])
+  cons         String[] @default([])
+  isVerified   Boolean  @default(false)
+  isPublished  Boolean  @default(true)
+  helpfulCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  business      Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, businessId]) // One review per user per business
+  @@unique([userId, businessId])
   @@index([businessId])
   @@index([rating])
   @@index([isPublished])
   @@index([createdAt])
 }
 
-// ============================================
-// FAVORITES / BOOKMARKS
-// ============================================
-
 model Favorite {
-  id          String   @id @default(cuid())
-  userId      String
-  businessId  String
-  notes       String?  @db.Text
-  createdAt   DateTime @default(now())
-
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String
+  businessId String
+  notes      String?
+  createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, businessId])
   @@index([userId])
   @@index([businessId])
 }
 
-// ============================================
-// SEARCH & ANALYTICS
-// ============================================
-
 model SearchHistory {
-  id              String   @id @default(cuid())
-  userId          String?  // Nullable for anonymous searches
-  query           String?
-  zipCode         String?
-  city            String?
-  state           String?
-  disabilityId    String?
-  serviceTypeId   String?
-  filters         Json?    // Store additional filters
-  resultsCount    Int?
-  clickedResult   String?  // Business ID that was clicked
-  createdAt       DateTime @default(now())
-
-  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String?
+  query         String?
+  zipCode       String?
+  city          String?
+  state         String?
+  disabilityId  String?
+  serviceTypeId String?
+  filters       Json?
+  resultsCount  Int?
+  clickedResult String?
+  createdAt     DateTime @default(now())
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([zipCode])
   @@index([createdAt])
+}
+
+enum UserRole {
+  USER
+  BUSINESS
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+enum AgeGroup {
+  INFANT
+  TODDLER
+  CHILD
+  TEEN
+  ADULT
+  ALL_AGES
+}
+
+enum PriceRange {
+  FREE
+  LOW
+  MEDIUM
+  HIGH
+  PREMIUM
+  CONTACT
 }
