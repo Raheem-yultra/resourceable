@@ -64,6 +64,7 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
   const [showSubject, setShowSubject] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -91,14 +92,18 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
 
   const fetchMessages = async () => {
     try {
+      setErrorMessage(null);
       const response = await fetch(`/api/messages/${partnerId}`);
       if (response.ok) {
         const data = await response.json();
         setMessages(data.messages);
         setPartner(data.partner);
+      } else {
+        setErrorMessage('Unable to load this conversation. Please refresh and try again.');
       }
     } catch (error) {
       console.error('Failed to fetch messages:', error);
+      setErrorMessage('Unable to load this conversation. Please check your connection.');
     } finally {
       setLoading(false);
     }
@@ -109,6 +114,7 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
     if (!newMessage.trim() || sending) return;
 
     setSending(true);
+    setErrorMessage(null);
     try {
       const response = await fetch('/api/messages', {
         method: 'POST',
@@ -125,9 +131,13 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
         setSubject('');
         setShowSubject(false);
         await fetchMessages();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setErrorMessage(data.error || 'Unable to send message. Please try again.');
       }
     } catch (error) {
       console.error('Failed to send message:', error);
+      setErrorMessage('Unable to send message. Please check your connection and retry.');
     } finally {
       setSending(false);
     }
@@ -208,7 +218,7 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
 
       <CardContent className="flex-1 flex flex-col p-0 bg-gradient-to-b from-slate-50/50 to-white">
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4" role="log" aria-live="polite" aria-relevant="additions text">
           {messages.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
@@ -275,6 +285,11 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
 
         {/* Input Area */}
         <div className="border-t bg-white p-4 shadow-inner">
+          {errorMessage && (
+            <p className="mb-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
+              {errorMessage}
+            </p>
+          )}
           <form onSubmit={sendMessage} className="space-y-3">
             {showSubject && (
               <div className="space-y-2 animate-in slide-in-from-top-2">
@@ -306,7 +321,7 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    sendMessage(e as any);
+                    e.currentTarget.form?.requestSubmit();
                   }
                 }}
               />
@@ -317,6 +332,8 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
                   size="sm"
                   onClick={() => setShowSubject(!showSubject)}
                   title={showSubject ? "Remove subject" : "Add subject"}
+                  aria-label={showSubject ? 'Hide subject field' : 'Show subject field'}
+                  aria-pressed={showSubject}
                   className="h-10 w-10 p-0"
                 >
                   {showSubject ? '✕' : '📝'}

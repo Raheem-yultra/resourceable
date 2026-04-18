@@ -28,8 +28,14 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <Providers>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-background focus:text-foreground focus:px-4 focus:py-2 focus:rounded-md focus:shadow"
+          >
+            Skip to main content
+          </a>
           <ConditionalNavbar />
-          {children}
+          <main id="main-content">{children}</main>
         </Providers>
       </body>
     </html>

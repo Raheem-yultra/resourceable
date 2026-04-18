@@ -4,24 +4,34 @@ import { z } from 'zod';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 // Validation schema
 const searchParamsSchema = z.object({
-  query: z.string().optional(),
-  zipCode: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  disabilityId: z.string().optional(),
-  serviceTypeId: z.string().optional(),
+  query: z.string().trim().max(200).optional(),
+  zipCode: z.string().trim().max(20).optional(),
+  city: z.string().trim().max(100).optional(),
+  state: z.string().trim().max(50).optional(),
+  disabilityIds: z.array(z.string().cuid()).optional(),
+  serviceTypeIds: z.array(z.string().cuid()).optional(),
+  priceMin: z.number().min(0).max(100000).optional(),
+  priceMax: z.number().min(0).max(100000).optional(),
   priceRange: z.enum(['FREE', 'LOW', 'MEDIUM', 'HIGH', 'PREMIUM', 'CONTACT']).optional(),
   ageGroup: z.enum(['INFANT', 'TODDLER', 'CHILD', 'TEEN', 'ADULT', 'ALL_AGES']).optional(),
   insuranceAccepted: z.boolean().optional(),
   isAvailable: z.boolean().optional(),
   minRating: z.number().min(1).max(5).optional(),
-  radius: z.number().min(1).max(100).optional(), // miles
-  page: z.number().min(1).default(1),
-  limit: z.number().min(1).max(100).default(20),
+  radius: z.number().int().min(1).max(100).optional(), // miles
+  page: z.number().int().min(1).default(1),
+  limit: z.number().int().min(1).max(50).default(20),
   sortBy: z.enum(['relevance', 'rating', 'distance', 'price', 'newest']).default('relevance'),
-});
+}).refine(
+  (params) => params.priceMin === undefined || params.priceMax === undefined || params.priceMin <= params.priceMax,
+  {
+    message: 'priceMin cannot be greater than priceMax',
+    path: ['priceMin'],
+  }
+);
 
 type SearchParams = z.infer<typeof searchParamsSchema>;
 
@@ -41,8 +51,11 @@ export async function GET(req: NextRequest) {
     // Handle multiple disability/serviceType IDs
     const disabilityIds = searchParams.getAll('disabilityId');
     const serviceTypeIds = searchParams.getAll('serviceTypeId');
+    const insuranceAcceptedParam = searchParams.get('insuranceAccepted');
+    const isAvailableParam = searchParams.get('isAvailable');
+    const sortByParam = searchParams.get('sortBy');
     
-    const params = {
+    const paramsResult = searchParamsSchema.safeParse({
       query: searchParams.get('query') || undefined,
       zipCode: searchParams.get('zipCode') || undefined,
       city: searchParams.get('city') || undefined,
@@ -53,14 +66,23 @@ export async function GET(req: NextRequest) {
       priceMax: searchParams.get('priceMax') ? parseFloat(searchParams.get('priceMax')!) : undefined,
       priceRange: (searchParams.get('priceRange') as 'FREE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'PREMIUM' | 'CONTACT' | undefined) || undefined,
       ageGroup: (searchParams.get('ageGroup') as 'INFANT' | 'TODDLER' | 'CHILD' | 'TEEN' | 'ADULT' | 'ALL_AGES' | undefined) || undefined,
-      insuranceAccepted: searchParams.get('insuranceAccepted') === 'true' || undefined,
-      isAvailable: searchParams.get('isAvailable') !== 'false',
+      insuranceAccepted: insuranceAcceptedParam === null ? undefined : insuranceAcceptedParam === 'true',
+      isAvailable: isAvailableParam === null ? undefined : isAvailableParam === 'true',
       minRating: searchParams.get('minRating') ? parseFloat(searchParams.get('minRating')!) : undefined,
       radius: searchParams.get('radius') ? parseInt(searchParams.get('radius')!) : undefined,
       page: parseInt(searchParams.get('page') || '1'),
       limit: parseInt(searchParams.get('limit') || '20'),
-      sortBy: (searchParams.get('sortBy') as any) || 'relevance',
-    };
+      sortBy: sortByParam || 'relevance',
+    });
+
+    if (!paramsResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid search parameters', details: paramsResult.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const params = paramsResult.data;
 
     // Build search results
     const results = await searchServices(params, session?.user?.id);
@@ -73,21 +95,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(results);
   } catch (error: any) {
     console.error('Search error:', error);
-    
-    if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Invalid search parameters', details: error.errors },
-        { status: 400 }
-      );
-    }
 
-    // Include error message in development/debug
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? error.message : undefined,
-        // Temporary: include message to debug production issue
-        debug: error.message 
       },
       { status: 500 }
     );
@@ -95,7 +106,7 @@ export async function GET(req: NextRequest) {
 }
 
 // Main search function
-async function searchServices(params: any, userId?: string) {
+async function searchServices(params: SearchParams, userId?: string) {
   const { page, limit, sortBy } = params;
   const skip = (page - 1) * limit;
 
@@ -321,8 +332,8 @@ function getAppliedFilters(params: SearchParams) {
   if (params.zipCode) applied.push('zipCode');
   if (params.city) applied.push('city');
   if (params.state) applied.push('state');
-  if (params.disabilityId) applied.push('disability');
-  if (params.serviceTypeId) applied.push('serviceType');
+  if (params.disabilityIds?.length) applied.push('disability');
+  if (params.serviceTypeIds?.length) applied.push('serviceType');
   if (params.priceRange) applied.push('priceRange');
   if (params.ageGroup) applied.push('ageGroup');
   if (params.insuranceAccepted) applied.push('insurance');
@@ -341,8 +352,8 @@ async function logSearch(params: SearchParams, userId: string | undefined, resul
         zipCode: params.zipCode,
         city: params.city,
         state: params.state,
-        disabilityId: params.disabilityId,
-        serviceTypeId: params.serviceTypeId,
+        disabilityId: params.disabilityIds?.[0],
+        serviceTypeId: params.serviceTypeIds?.[0],
         filters: {
           priceRange: params.priceRange,
           ageGroup: params.ageGroup,

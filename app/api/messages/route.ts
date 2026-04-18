@@ -7,9 +7,16 @@ import { z } from 'zod';
 // Validation schemas
 const sendMessageSchema = z.object({
   receiverId: z.string().cuid(),
-  subject: z.string().min(1).max(200).optional(),
-  content: z.string().min(1).max(5000),
+  subject: z.string().trim().min(1).max(200).optional(),
+  content: z.string().trim().min(1).max(5000),
   parentId: z.string().cuid().optional(),
+});
+
+const conversationsQuerySchema = z.object({
+  type: z.enum(['all', 'sent', 'received']).default('all'),
+  unreadOnly: z.boolean().default(false),
+  page: z.number().int().min(1).default(1),
+  limit: z.number().int().min(1).max(50).default(20),
 });
 
 // GET /api/messages - Get user's conversations
@@ -21,10 +28,21 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const type = searchParams.get('type') || 'all'; // 'all', 'sent', 'received'
-    const unreadOnly = searchParams.get('unreadOnly') === 'true';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const queryResult = conversationsQuerySchema.safeParse({
+      type: searchParams.get('type') || undefined,
+      unreadOnly: searchParams.get('unreadOnly') === 'true',
+      page: parseInt(searchParams.get('page') || '1', 10),
+      limit: parseInt(searchParams.get('limit') || '20', 10),
+    });
+
+    if (!queryResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid query parameters', details: queryResult.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { type, unreadOnly, page, limit } = queryResult.data;
     const skip = (page - 1) * limit;
 
     // Get all conversations grouped by conversation partner
@@ -73,6 +91,13 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const validatedData = sendMessageSchema.parse(body);
+
+    if (validatedData.receiverId === session.user.id) {
+      return NextResponse.json(
+        { error: 'Cannot send a message to yourself' },
+        { status: 400 }
+      );
+    }
 
     // Check if receiver exists
     const receiver = await prisma.user.findUnique({

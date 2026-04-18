@@ -96,11 +96,11 @@ export function MessageInbox({ currentUserId }: MessageInboxProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <section className="space-y-6" aria-labelledby="messages-heading">
       {/* Header */}
       <div className="flex items-center justify-between bg-gradient-to-r from-primary/5 to-primary/10 p-6 rounded-lg border border-primary/20">
         <div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+          <h2 id="messages-heading" className="text-3xl font-bold text-foreground">
             💬 Messages
           </h2>
           {unreadCount > 0 && (
@@ -112,7 +112,7 @@ export function MessageInbox({ currentUserId }: MessageInboxProps) {
             </p>
           )}
         </div>
-        <Button onClick={fetchConversations} variant="outline" size="sm" className="gap-2">
+        <Button onClick={fetchConversations} variant="outline" size="sm" className="gap-2" aria-label="Refresh conversations">
           <span>🔄</span> Refresh
         </Button>
       </div>
@@ -147,7 +147,11 @@ export function MessageInbox({ currentUserId }: MessageInboxProps) {
 
       {/* Search */}
       <div className="relative">
+        <label htmlFor="conversation-search" className="sr-only">
+          Search conversations
+        </label>
         <Input
+          id="conversation-search"
           type="search"
           placeholder="🔍 Search conversations..."
           value={searchQuery}
@@ -262,6 +266,6 @@ export function MessageInbox({ currentUserId }: MessageInboxProps) {
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
