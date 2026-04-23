@@ -25,7 +25,7 @@ export function Header() {
 			// Not logged in - show public links
 			return [
 				{ label: 'Search Services', href: '/search' },
-				{ label: 'About', href: '/#about' },
+				{ label: 'About', href: pathname === '/' ? '#about' : '/#about' },
 			];
 		}
 
@@ -56,6 +56,9 @@ export function Header() {
 
 	const links = getLinks();
 	const isActiveLink = (href: string) => {
+		if (href.startsWith('#')) {
+			return pathname === '/';
+		}
 		if (href.startsWith('/#')) {
 			return pathname === '/';
 		}
