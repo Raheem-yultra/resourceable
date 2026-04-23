@@ -193,8 +193,8 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
-      {/* Skip to main content link for screen readers and keyboard users */}
-      <a href="#main-content" className="skip-to-main">
+      {/* Skip to search results for screen readers and keyboard users */}
+      <a href="#search-results" className="skip-to-main">
         Skip to search results
       </a>
       
@@ -313,7 +313,7 @@ export default function SearchPage() {
         </div>
 
         {/* Results Header */}
-        <main id="main-content" tabIndex={-1}>
+        <section id="search-results" tabIndex={-1}>
           {services.length > 0 && (
             <div className="mb-4 sm:mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 sm:mb-4">
@@ -413,7 +413,7 @@ export default function SearchPage() {
               <ServiceList services={services} />
             )}
           </div>
-        </main>
+        </section>
       </div>
     </div>
   );
