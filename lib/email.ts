@@ -82,14 +82,14 @@ export async function sendContactInquiryEmail({
             <style>
               body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
               .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; }
+              .header { background: linear-gradient(135deg, #0e7490 0%, #0369a1 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; }
               .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-              .message-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
+              .message-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0e7490; }
               .info-row { margin: 10px 0; padding: 10px; background: white; border-radius: 6px; }
-              .label { font-weight: bold; color: #667eea; display: inline-block; width: 120px; }
+              .label { font-weight: bold; color: #0e7490; display: inline-block; width: 120px; }
               .footer { background: #f3f4f6; padding: 20px; text-align: center; color: #6b7280; font-size: 14px; border-radius: 0 0 10px 10px; }
-              .cta-button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-              .cta-button:hover { background: #5568d3; }
+              .cta-button { display: inline-block; background: #0e7490; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+              .cta-button:hover { background: #0c4a6e; }
             </style>
           </head>
           <body>
@@ -111,7 +111,7 @@ export async function sendContactInquiryEmail({
                 </div>
                 
                 <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <h3 style="margin-top: 0; color: #667eea;">📋 Customer Information</h3>
+                  <h3 style="margin-top: 0; color: #0e7490;">📋 Customer Information</h3>
                   <div class="info-row">
                     <span class="label">Name:</span>
                     <span>${safeName}</span>
@@ -129,7 +129,7 @@ export async function sendContactInquiryEmail({
                 </div>
 
                 <div class="message-box">
-                  <h3 style="margin-top: 0; color: #667eea;">💬 Customer's Message</h3>
+                  <h3 style="margin-top: 0; color: #0e7490;">💬 Customer's Message</h3>
                   <p style="white-space: pre-wrap; margin: 0;">${safeMessage}</p>
                 </div>
 
@@ -232,11 +232,11 @@ export async function sendCustomerConfirmationEmail({
             <style>
               body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
               .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; }
+              .header { background: linear-gradient(135deg, #0e7490 0%, #0369a1 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; }
               .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-              .contact-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #667eea; }
+              .contact-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #0e7490; }
               .info-row { margin: 10px 0; padding: 10px; background: #f9fafb; border-radius: 6px; }
-              .label { font-weight: bold; color: #667eea; display: inline-block; width: 100px; }
+              .label { font-weight: bold; color: #0e7490; display: inline-block; width: 100px; }
               .footer { background: #f3f4f6; padding: 20px; text-align: center; color: #6b7280; font-size: 14px; border-radius: 0 0 10px 10px; }
               .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; margin: 10px 0; }
             </style>
@@ -253,33 +253,33 @@ export async function sendCustomerConfirmationEmail({
                 <p>Thank you for using ResourceAble! We've sent your inquiry to <strong>${safeBusiness}</strong> regarding their <strong>${safeService}</strong>.</p>
                 
                 <div class="contact-box">
-                  <h3 style="margin-top: 0; color: #667eea;">📞 Business Contact Information</h3>
+                  <h3 style="margin-top: 0; color: #0e7490;">📞 Business Contact Information</h3>
                   <p style="margin: 0 0 15px 0; color: #6b7280;">You can reach out to them directly:</p>
                   
                   ${businessPhone ? `
                   <div class="info-row">
                     <span class="label">Phone:</span>
-                    <span><a href="tel:${safePhone}" style="color: #667eea; text-decoration: none;"><strong>${safePhone}</strong></a></span>
+                    <span><a href="tel:${safePhone}" style="color: #0e7490; text-decoration: none;"><strong>${safePhone}</strong></a></span>
                   </div>
                   ` : ''}
                   
                   ${businessEmail ? `
                   <div class="info-row">
                     <span class="label">Email:</span>
-                    <span><a href="mailto:${safeEmail}" style="color: #667eea; text-decoration: none;"><strong>${safeEmail}</strong></a></span>
+                    <span><a href="mailto:${safeEmail}" style="color: #0e7490; text-decoration: none;"><strong>${safeEmail}</strong></a></span>
                   </div>
                   ` : ''}
                   
                   ${businessWebsite ? `
                   <div class="info-row">
                     <span class="label">Website:</span>
-                    <span><a href="${safeWebsite.startsWith('http') ? safeWebsite : 'https://' + safeWebsite}" target="_blank" style="color: #667eea; text-decoration: none;"><strong>${safeWebsite}</strong></a></span>
+                    <span><a href="${safeWebsite.startsWith('http') ? safeWebsite : 'https://' + safeWebsite}" target="_blank" style="color: #0e7490; text-decoration: none;"><strong>${safeWebsite}</strong></a></span>
                   </div>
                   ` : ''}
                 </div>
 
-                <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
-                  <h3 style="margin-top: 0; color: #667eea;">📝 Your Message to ${safeBusiness}</h3>
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0e7490;">
+                  <h3 style="margin-top: 0; color: #0e7490;">📝 Your Message to ${safeBusiness}</h3>
                   <p style="white-space: pre-wrap; margin: 0; color: #4b5563; font-style: italic;">"${safeMessage}"</p>
                 </div>
 
@@ -381,10 +381,10 @@ export async function sendPasswordResetEmail({
             <style>
               body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
               .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
+              .header { background: linear-gradient(135deg, #0e7490 0%, #0369a1 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
               .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-              .button { display: inline-block; background: #667eea; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }
-              .button:hover { background: #5568d3; }
+              .button { display: inline-block; background: #0e7490; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }
+              .button:hover { background: #0c4a6e; }
               .footer { background: #f3f4f6; padding: 20px; text-align: center; color: #6b7280; font-size: 14px; border-radius: 0 0 10px 10px; }
               .warning { background: #fef3c7; border: 1px solid #fbbf24; padding: 15px; border-radius: 8px; margin: 20px 0; }
             </style>
@@ -408,7 +408,7 @@ export async function sendPasswordResetEmail({
                 
                 <p style="font-size: 14px; color: #6b7280; margin-top: 20px;">
                   Or copy and paste this link into your browser:<br>
-                  <a href="${resetUrl}" style="color: #667eea; word-break: break-all;">${resetUrl}</a>
+                  <a href="${resetUrl}" style="color: #0e7490; word-break: break-all;">${resetUrl}</a>
                 </p>
                 
                 <div class="warning">
@@ -503,9 +503,9 @@ export async function sendVerificationEmail({
             <style>
               body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
               .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
+              .header { background: linear-gradient(135deg, #0e7490 0%, #0369a1 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
               .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-              .button { display: inline-block; background: #667eea; color: white !important; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; }
+              .button { display: inline-block; background: #0e7490; color: white !important; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; }
               .footer { background: #f3f4f6; padding: 20px; text-align: center; color: #6b7280; font-size: 14px; border-radius: 0 0 10px 10px; }
               .info-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 8px; margin: 20px 0; }
             </style>
@@ -530,7 +530,7 @@ export async function sendVerificationEmail({
                 
                 <p style="font-size: 14px; color: #6b7280;">
                   Or copy and paste this link into your browser:<br>
-                  <a href="${verificationUrl}" style="color: #667eea; word-break: break-all;">${verificationUrl}</a>
+                  <a href="${verificationUrl}" style="color: #0e7490; word-break: break-all;">${verificationUrl}</a>
                 </p>
                 
                 <div class="info-box">

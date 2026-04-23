@@ -201,7 +201,7 @@ export function MessageInbox({ currentUserId }: MessageInboxProps) {
                           className="w-14 h-14 rounded-full object-cover ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all"
                         />
                       ) : (
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/20 to-cyan-500/20 flex items-center justify-center ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all">
                           <span className="text-primary font-bold text-xl">
                             {(conv.partner.name || conv.partner.email)[0].toUpperCase()}
                           </span>
