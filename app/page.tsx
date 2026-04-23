@@ -16,12 +16,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden">
-      {/* Skip to main content for accessibility */}
-      <a href="#main-content" className="skip-to-main">
-        Skip to main content
-      </a>
-      
-      <main id="main-content" className="w-full">
+      <div className="w-full">
         {/* Hero Section with Interactive Text */}
         <section 
           ref={heroRef}
@@ -102,7 +97,7 @@ export default function HomePage() {
         </section>
 
         {/* How It Works Section */}
-        <section className="w-full bg-muted py-12 sm:py-16 lg:py-20" aria-labelledby="how-it-works">
+        <section id="about" className="w-full bg-muted py-12 sm:py-16 lg:py-20" aria-labelledby="how-it-works">
           <div className="w-full px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto">
             <h2 id="how-it-works" className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mb-8 sm:mb-12 lg:mb-16">How It Works</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12">
@@ -136,7 +131,7 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-      </main>
+      </div>
 
       <footer className="w-full border-t py-6 sm:py-8 lg:py-10" role="contentinfo">
         <div className="w-full px-4 sm:px-6 lg:px-12 text-center text-muted-foreground">

@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,6 +12,7 @@ export function Header() {
 	const [open, setOpen] = React.useState(false);
 	const scrolled = useScroll(10);
 	const { data: session } = useSession();
+	const pathname = usePathname();
 
 	// Determine home link based on auth state
 	const homeLink = session 
@@ -23,7 +25,7 @@ export function Header() {
 			// Not logged in - show public links
 			return [
 				{ label: 'Search Services', href: '/search' },
-				{ label: 'About', href: '#about' },
+				{ label: 'About', href: '/#about' },
 			];
 		}
 
@@ -53,6 +55,12 @@ export function Header() {
 	};
 
 	const links = getLinks();
+	const isActiveLink = (href: string) => {
+		if (href.startsWith('/#')) {
+			return pathname === '/';
+		}
+		return pathname === href;
+	};
 
 	React.useEffect(() => {
 		if (open) {
@@ -69,6 +77,21 @@ export function Header() {
 		};
 	}, [open]);
 
+	React.useEffect(() => {
+		if (!open) {
+			return;
+		}
+
+		const handleEscape = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') {
+				setOpen(false);
+			}
+		};
+
+		window.addEventListener('keydown', handleEscape);
+		return () => window.removeEventListener('keydown', handleEscape);
+	}, [open]);
+
 	return (
 		<header
 			className={cn(
@@ -81,6 +104,7 @@ export function Header() {
 			)}
 		>
 			<nav
+				aria-label="Primary"
 				className={cn(
 					'flex h-14 w-full items-center justify-between px-4 md:h-12 md:transition-all md:ease-out',
 					{
@@ -97,7 +121,12 @@ export function Header() {
 				</Link>
 				<div className="hidden items-center gap-2 md:flex">
 					{links.map((link, i) => (
-						<Link key={i} className={buttonVariants({ variant: 'ghost' })} href={link.href}>
+						<Link
+							key={i}
+							className={buttonVariants({ variant: 'ghost' })}
+							href={link.href}
+							aria-current={isActiveLink(link.href) ? 'page' : undefined}
+						>
 							{link.label}
 						</Link>
 					))}
@@ -118,12 +147,21 @@ export function Header() {
 						</>
 					)}
 				</div>
-				<Button size="icon" variant="outline" onClick={() => setOpen(!open)} className="md:hidden">
+				<Button
+					size="icon"
+					variant="outline"
+					onClick={() => setOpen(!open)}
+					className="md:hidden"
+					aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
+					aria-expanded={open}
+					aria-controls="mobile-navigation-menu"
+				>
 					<MenuToggleIcon open={open} className="size-5" duration={300} />
 				</Button>
 			</nav>
 
 			<div
+				id="mobile-navigation-menu"
 				className={cn(
 					'bg-background/90 fixed top-14 right-0 bottom-0 left-0 z-50 flex flex-col overflow-hidden border-y md:hidden',
 					open ? 'block' : 'hidden',
@@ -146,6 +184,7 @@ export function Header() {
 								})}
 								href={link.href}
 								onClick={() => setOpen(false)}
+								aria-current={isActiveLink(link.href) ? 'page' : undefined}
 							>
 								{link.label}
 							</Link>

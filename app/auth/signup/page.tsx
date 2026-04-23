@@ -137,10 +137,16 @@ export default function SignUpPage() {
         <CardContent className="px-4 sm:px-6">
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             {/* Role Toggle */}
-            <div className="flex gap-2 p-1 bg-muted rounded-lg">
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">I am signing up as</legend>
+              <p id="role-help" className="text-xs text-muted-foreground">
+                Choose Parent/Guardian if you are looking for services, or Service Provider if you want to list your business.
+              </p>
+              <div className="flex gap-2 p-1 bg-muted rounded-lg" role="group" aria-describedby="role-help" aria-label="Account type">
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, role: 'USER' })}
+                aria-pressed={formData.role === 'USER'}
                 className={`flex-1 py-3 sm:py-2.5 rounded-md text-sm font-medium transition-all min-h-[44px] ${
                   formData.role === 'USER'
                     ? 'bg-background text-foreground shadow-sm'
@@ -152,6 +158,7 @@ export default function SignUpPage() {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, role: 'BUSINESS' })}
+                aria-pressed={formData.role === 'BUSINESS'}
                 className={`flex-1 py-3 sm:py-2.5 rounded-md text-sm font-medium transition-all min-h-[44px] ${
                   formData.role === 'BUSINESS'
                     ? 'bg-background text-foreground shadow-sm'
@@ -160,7 +167,8 @@ export default function SignUpPage() {
               >
                 Service Provider
               </button>
-            </div>
+              </div>
+            </fieldset>
 
             {/* Name Field */}
             <div className="space-y-2">
