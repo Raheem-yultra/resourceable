@@ -101,10 +101,10 @@ export default function HomePage() {
         </section>
 
         {/* How It Works Section */}
-         <section id="about" className="w-full py-12 sm:py-16 lg:py-20" aria-labelledby="how-it-works">
-           <div className="w-full px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto">
-              <h2 id="how-it-works" className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mb-8 sm:mb-12 lg:mb-16">How It Works</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12">
+        <section id="about" className="w-full py-12 sm:py-16 lg:py-20" aria-labelledby="how-it-works">
+          <div className="w-full px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto">
+            <h2 id="how-it-works" className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mb-8 sm:mb-12 lg:mb-16">How It Works</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12">
               <div className="text-center theme-panel p-6">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5 lg:mb-6 text-primary-foreground text-xl sm:text-2xl font-bold" aria-hidden="true">
                   1

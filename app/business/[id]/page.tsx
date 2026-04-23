@@ -274,7 +274,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
                           {service.serviceTypes.map((st: any) => (
                             <span
                               key={st.id}
-                               className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                              className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
                             >
                               {st.serviceType.name}
                             </span>
@@ -288,7 +288,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
                           {service.serviceDisabilities.slice(0, 5).map((sd: any) => (
                             <span
                               key={sd.id}
-                               className="inline-flex items-center rounded-md bg-accent px-2 py-1 text-xs font-medium text-accent-foreground"
+                              className="inline-flex items-center rounded-md bg-accent px-2 py-1 text-xs font-medium text-accent-foreground"
                             >
                               {sd.disability.name}
                             </span>
@@ -321,7 +321,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
                           {Array.from({ length: 5 }).map((_, i) => (
                             <span
                               key={i}
-                               className={i < review.rating ? 'text-primary' : 'text-muted-foreground/40'}
+                              className={i < review.rating ? 'text-primary' : 'text-muted-foreground/40'}
                             >
                               ★
                             </span>

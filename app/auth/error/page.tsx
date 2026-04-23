@@ -34,7 +34,6 @@ function AuthErrorContent() {
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <Card className="max-w-md w-full shadow-lg bg-card/90 backdrop-blur-sm">
         <CardHeader className="text-center">
-          <div className="text-center">
           <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-destructive/15">
             <svg
               className="h-8 w-8 text-destructive"
@@ -61,7 +60,6 @@ function AuthErrorContent() {
               Error code: {error}
             </p>
           )}
-        </div>
         </CardHeader>
 
         <CardContent className="mt-2 space-y-4">
