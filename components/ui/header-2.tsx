@@ -7,6 +7,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
 import { useScroll } from '@/hooks/use-scroll';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export function Header() {
 	const [open, setOpen] = React.useState(false);
@@ -123,6 +124,7 @@ export function Header() {
 					/>
 				</Link>
 				<div className="hidden items-center gap-2 md:flex">
+					<ThemeToggle />
 					{links.map((link, i) => (
 						<Link
 							key={i}
@@ -194,6 +196,7 @@ export function Header() {
 						))}
 					</div>
 					<div className="flex flex-row gap-2">
+						<ThemeToggle />
 						{session ? (
 							<Button variant="outline" className="flex-1 min-h-[44px]" asChild>
 								<Link href="/auth/signout" onClick={() => setOpen(false)}>Sign Out</Link>

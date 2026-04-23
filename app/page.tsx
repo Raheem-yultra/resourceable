@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import TextCursorProximity from '@/components/ui/text-cursor-proximity';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export default function HomePage() {
   const router = useRouter();
@@ -16,6 +17,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden">
+      <div className="fixed right-4 top-4 z-50">
+        <ThemeToggle />
+      </div>
       <div className="w-full">
         {/* Hero Section with Interactive Text */}
         <section 
