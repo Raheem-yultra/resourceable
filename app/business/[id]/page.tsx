@@ -288,7 +288,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
                           {service.serviceDisabilities.slice(0, 5).map((sd: any) => (
                             <span
                               key={sd.id}
-                              className="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700"
+                              className="inline-flex items-center rounded-md bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700"
                             >
                               {sd.disability.name}
                             </span>

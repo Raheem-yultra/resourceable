@@ -244,13 +244,13 @@ export default function SearchPage() {
                 <SheetTrigger asChild>
                   <Button 
                     size="lg" 
-                    className="h-11 sm:h-12 gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all flex-1 sm:flex-none sm:px-6"
+                    className="h-11 sm:h-12 gap-2 bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl transition-all flex-1 sm:flex-none sm:px-6"
                     aria-label={`Filters${(activeFilters.disabilities.length + activeFilters.serviceTypes.length) > 0 ? `, ${activeFilters.disabilities.length + activeFilters.serviceTypes.length} active` : ''}`}
                   >
                     <Filter className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
                     <span className="font-semibold text-sm sm:text-base">Filters</span>
                     {(activeFilters.disabilities.length + activeFilters.serviceTypes.length) > 0 && (
-                      <span className="ml-1 bg-white text-purple-700 rounded-full px-2 py-0.5 text-xs font-bold" aria-hidden="true">
+                      <span className="ml-1 bg-white text-sky-700 rounded-full px-2 py-0.5 text-xs font-bold" aria-hidden="true">
                         {activeFilters.disabilities.length + activeFilters.serviceTypes.length}
                       </span>
                     )}
@@ -329,12 +329,12 @@ export default function SearchPage() {
                   {activeFilters.disabilities.map((disability) => (
                     <span
                       key={disability.id}
-                      className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-xs sm:text-sm"
+                      className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200 text-xs sm:text-sm"
                     >
                       <span className="truncate max-w-[120px] sm:max-w-none">{disability.name}</span>
                       <button
                         onClick={() => removeDisabilityFilter(disability.id)}
-                        className="hover:bg-purple-100 rounded-full p-0.5 ml-1 flex-shrink-0 min-w-[20px] min-h-[20px] flex items-center justify-center"
+                        className="hover:bg-sky-100 rounded-full p-0.5 ml-1 flex-shrink-0 min-w-[20px] min-h-[20px] flex items-center justify-center"
                         aria-label={`Remove ${disability.name} filter`}
                       >
                         <X className="h-3 w-3" aria-hidden="true" />
@@ -397,10 +397,10 @@ export default function SearchPage() {
                 <p className="text-muted-foreground text-sm sm:text-base">Searching for services...</p>
               </div>
             ) : !error && services.length === 0 ? (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 sm:p-8 lg:p-12 text-center" role="status">
+              <div className="bg-card border border-border rounded-lg p-6 sm:p-8 lg:p-12 text-center" role="status">
                 <div className="text-4xl sm:text-5xl lg:text-6xl mb-4" aria-hidden="true">🔍</div>
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No services found</h3>
-                <p className="text-gray-600 mb-4 sm:mb-6 max-w-md mx-auto text-sm sm:text-base">
+                <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-2">No services found</h3>
+                <p className="text-muted-foreground mb-4 sm:mb-6 max-w-md mx-auto text-sm sm:text-base">
                   We couldn't find any services matching your search. Try adjusting your filters or search terms to find what you're looking for.
                 </p>
                 {(activeFilters.disabilities.length > 0 || activeFilters.serviceTypes.length > 0 || activeFilters.zipCode) && (

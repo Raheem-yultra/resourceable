@@ -55,7 +55,7 @@ function ServiceCard({ service }: { service: Service }) {
     <Card className="hover:shadow-lg transition-all duration-200 hover:border-primary/50 relative group">
       <button
         onClick={() => setIsFavorite(!isFavorite)}
-        className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+        className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-2 rounded-full bg-card/90 backdrop-blur-sm hover:bg-card transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
         aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         aria-pressed={isFavorite}
       >
@@ -158,7 +158,7 @@ function ServiceCard({ service }: { service: Service }) {
               {service.disabilities.slice(0, 2).map((disability) => (
                 <span
                   key={disability.id}
-                  className="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs sm:text-sm font-medium text-purple-700 border border-purple-200"
+                  className="inline-flex items-center rounded-md bg-sky-50 px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs sm:text-sm font-medium text-sky-700 border border-sky-200"
                 >
                   {disability.name}
                 </span>

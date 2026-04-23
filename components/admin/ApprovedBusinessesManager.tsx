@@ -279,7 +279,7 @@ export function ApprovedBusinessesManager() {
                         {business.businessDisabilities.slice(0, 3).map((bd, idx) => (
                           <span
                             key={idx}
-                            className="inline-flex items-center rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700 border border-purple-200"
+                            className="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700 border border-sky-200"
                           >
                             {bd.disability.name}
                           </span>
@@ -351,7 +351,7 @@ export function ApprovedBusinessesManager() {
           {selectedBusiness && (
             <div className="py-4 space-y-6">
               {/* Business Summary */}
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <div className="p-4 bg-gradient-to-r from-sky-50 to-cyan-50 rounded-lg border border-sky-200">
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
                   Business Profile
@@ -377,16 +377,16 @@ export function ApprovedBusinessesManager() {
 
               {/* Disabilities Served */}
               {selectedBusiness.businessDisabilities && selectedBusiness.businessDisabilities.length > 0 && (
-                <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="p-4 bg-sky-50 rounded-lg border border-sky-200">
                   <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <Users className="h-4 w-4 text-purple-600" />
+                    <Users className="h-4 w-4 text-sky-600" />
                     Disabilities & Conditions Served
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {selectedBusiness.businessDisabilities.map((bd, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center rounded-full bg-white px-3 py-1 text-sm font-medium text-purple-700 border border-purple-300"
+                        className="inline-flex items-center rounded-full bg-card px-3 py-1 text-sm font-medium text-sky-700 border border-sky-300"
                       >
                         {bd.disability.name}
                       </span>
