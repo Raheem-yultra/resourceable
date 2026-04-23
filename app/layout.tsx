@@ -38,7 +38,7 @@ export default function RootLayout({
         <link rel="manifest" href="/site.webmanifest" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} site-shell`}>
         <Providers>
           <a
             href="#main-content"
@@ -47,7 +47,7 @@ export default function RootLayout({
             Skip to main content
           </a>
           <ConditionalNavbar />
-          <main id="main-content">{children}</main>
+          <main id="main-content" className="relative z-0">{children}</main>
         </Providers>
       </body>
     </html>

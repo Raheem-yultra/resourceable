@@ -78,13 +78,13 @@ function VerifyEmailContent() {
   // If we have a token, show verification status
   if (token) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-muted px-4 py-6">
-        <Card className="w-full max-w-md shadow-lg">
+      <div className="min-h-screen w-full flex items-center justify-center px-4 py-6">
+        <Card className="w-full max-w-md shadow-lg bg-card/90 backdrop-blur-sm">
           <CardHeader className="space-y-3 text-center">
             {status === 'loading' && (
               <>
-                <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                <div className="mx-auto w-16 h-16 bg-primary/15 rounded-full flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
                 </div>
                 <CardTitle className="text-2xl font-bold">Verifying Email...</CardTitle>
                 <CardDescription>Please wait while we verify your email address.</CardDescription>
@@ -93,20 +93,20 @@ function VerifyEmailContent() {
             
             {status === 'success' && (
               <>
-                <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
+                <div className="mx-auto w-16 h-16 bg-primary/15 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-primary" />
                 </div>
-                <CardTitle className="text-2xl font-bold text-green-700">Email Verified!</CardTitle>
+                <CardTitle className="text-2xl font-bold">Email Verified!</CardTitle>
                 <CardDescription>{message}</CardDescription>
               </>
             )}
             
             {status === 'error' && (
               <>
-                <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                  <XCircle className="w-8 h-8 text-red-600" />
+                <div className="mx-auto w-16 h-16 bg-destructive/15 rounded-full flex items-center justify-center">
+                  <XCircle className="w-8 h-8 text-destructive" />
                 </div>
-                <CardTitle className="text-2xl font-bold text-red-700">Verification Failed</CardTitle>
+                <CardTitle className="text-2xl font-bold">Verification Failed</CardTitle>
                 <CardDescription>{message}</CardDescription>
               </>
             )}
@@ -147,7 +147,7 @@ function VerifyEmailContent() {
                   </Button>
                 </form>
                 {resendMessage && (
-                  <p className={`text-center text-sm ${resendMessage.includes('sent') ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className={`text-center text-sm ${resendMessage.includes('sent') ? 'text-primary' : 'text-destructive'}`}>
                     {resendMessage}
                   </p>
                 )}
@@ -165,8 +165,8 @@ function VerifyEmailContent() {
 
   // No token - show instructions to check email
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-muted px-4 py-6">
-      <Card className="w-full max-w-md shadow-lg">
+    <div className="min-h-screen w-full flex items-center justify-center px-4 py-6">
+      <Card className="w-full max-w-md shadow-lg bg-card/90 backdrop-blur-sm">
         <CardHeader className="space-y-3 text-center">
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
             <Mail className="w-8 h-8 text-primary" />
@@ -214,7 +214,7 @@ function VerifyEmailContent() {
               </Button>
             </form>
             {resendMessage && (
-              <p className={`text-center text-sm ${resendMessage.includes('sent') ? 'text-green-600' : 'text-red-600'}`}>
+              <p className={`text-center text-sm ${resendMessage.includes('sent') ? 'text-primary' : 'text-destructive'}`}>
                 {resendMessage}
               </p>
             )}

@@ -152,24 +152,24 @@ export function ContactModal({
 
         {/* Direct Contact Information */}
         {(phone || email || website) && (
-          <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
-            <h3 className="font-semibold text-sm text-gray-700">Direct Contact Information</h3>
+          <div className="space-y-3 border rounded-lg p-4 bg-secondary/40">
+            <h3 className="font-semibold text-sm">Direct Contact Information</h3>
             <div className="space-y-2">
               {phone && (
                 <a
                   href={`tel:${phone}`}
-                  className="flex items-center gap-3 text-sm hover:text-blue-600 transition-colors"
+                  className="flex items-center gap-3 text-sm hover:text-primary transition-colors"
                 >
-                  <Phone className="h-4 w-4 text-gray-500" />
+                  <Phone className="h-4 w-4 text-muted-foreground" />
                   <span>{phone}</span>
                 </a>
               )}
               {email && (
                 <a
                   href={`mailto:${email}`}
-                  className="flex items-center gap-3 text-sm hover:text-blue-600 transition-colors"
+                  className="flex items-center gap-3 text-sm hover:text-primary transition-colors"
                 >
-                  <Mail className="h-4 w-4 text-gray-500" />
+                  <Mail className="h-4 w-4 text-muted-foreground" />
                   <span>{email}</span>
                 </a>
               )}
@@ -178,9 +178,9 @@ export function ContactModal({
                   href={website.startsWith('http') ? website : `https://${website}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 text-sm hover:text-blue-600 transition-colors"
+                  className="flex items-center gap-3 text-sm hover:text-primary transition-colors"
                 >
-                  <Globe className="h-4 w-4 text-gray-500" />
+                  <Globe className="h-4 w-4 text-muted-foreground" />
                   <span>{website}</span>
                 </a>
               )}
@@ -191,7 +191,7 @@ export function ContactModal({
         {/* Contact Form - Always visible */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm text-gray-700">
+            <h3 className="font-semibold text-sm">
               📝 Send an Inquiry
             </h3>
             {session && (
@@ -208,7 +208,7 @@ export function ContactModal({
               </Button>
             )}
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             {session ? 
               `Send an inquiry to ${businessName}. We'll notify them and connect you via email.` :
               `We'll notify ${businessName} and send you their contact information via email.`
@@ -216,32 +216,32 @@ export function ContactModal({
           </p>
 
           {success ? (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6 space-y-3">
+            <div className="theme-success p-6 space-y-3">
               <div className="text-center">
                 <div className="text-4xl mb-2">✅</div>
-                <p className="text-green-800 font-medium text-lg">Success!</p>
+                <p className="font-medium text-lg">Success!</p>
               </div>
-              <p className="text-green-700 text-sm text-center">
+              <p className="text-sm text-center">
                 {successMessage}
               </p>
-              <div className="bg-white border border-green-300 rounded-lg p-4 mt-3">
-                <p className="text-sm text-gray-700 mb-2">
+              <div className="bg-background border border-primary/30 rounded-lg p-4 mt-3">
+                <p className="text-sm mb-2">
                   <strong>📧 Check your email!</strong>
                 </p>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                   We've sent you {businessName}'s contact information so you can reach out directly.
                 </p>
               </div>
-              <p className="text-xs text-gray-500 text-center mt-3">
+              <p className="text-xs text-muted-foreground text-center mt-3">
                 This window will close automatically...
               </p>
             </div>
           ) : (
             <>
               {!session && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                  <p className="text-xs text-blue-800">
-                    💡 <strong>Tip:</strong> <Link href="/auth/signin" className="underline hover:text-blue-600">Sign in</Link> to message {businessName} directly in real-time.
+                <div className="theme-note mb-4">
+                  <p className="text-xs">
+                    💡 <strong>Tip:</strong> <Link href="/auth/signin" className="underline hover:text-primary">Sign in</Link> to message {businessName} directly in real-time.
                   </p>
                 </div>
               )}
@@ -249,7 +249,7 @@ export function ContactModal({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-sm font-medium">
-                      Your Name <span className="text-red-500" aria-label="required">*</span>
+                      Your Name <span className="text-destructive" aria-label="required">*</span>
                     </Label>
                     <Input
                       id="name"
@@ -264,17 +264,17 @@ export function ContactModal({
                       aria-required="true"
                       aria-invalid={!!validationErrors.name}
                       aria-describedby={validationErrors.name ? 'name-error' : undefined}
-                      className={validationErrors.name ? 'border-red-500' : ''}
+                      className={validationErrors.name ? 'border-destructive' : ''}
                     />
                     {validationErrors.name && (
-                      <p id="name-error" className="text-sm text-red-600" role="alert">
+                      <p id="name-error" className="text-sm text-destructive" role="alert">
                         {validationErrors.name}
                       </p>
                     )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
-                      Your Email <span className="text-red-500" aria-label="required">*</span>
+                      Your Email <span className="text-destructive" aria-label="required">*</span>
                     </Label>
                     <Input
                       id="email"
@@ -290,10 +290,10 @@ export function ContactModal({
                       aria-required="true"
                       aria-invalid={!!validationErrors.email}
                       aria-describedby={validationErrors.email ? 'email-error' : undefined}
-                      className={validationErrors.email ? 'border-red-500' : ''}
+                      className={validationErrors.email ? 'border-destructive' : ''}
                     />
                     {validationErrors.email && (
-                      <p id="email-error" className="text-sm text-red-600" role="alert">
+                      <p id="email-error" className="text-sm text-destructive" role="alert">
                         {validationErrors.email}
                       </p>
                     )}
@@ -315,7 +315,7 @@ export function ContactModal({
 
                 <div className="space-y-2">
                   <Label htmlFor="message" className="text-sm font-medium">
-                    Message <span className="text-red-500" aria-label="required">*</span>
+                    Message <span className="text-destructive" aria-label="required">*</span>
                   </Label>
                   <Textarea
                     id="message"
@@ -328,7 +328,7 @@ export function ContactModal({
                     }}
                     rows={4}
                     placeholder="Tell them what you're looking for... (e.g., I'm interested in speech therapy for my 5-year-old with autism)"
-                    className={`resize-none ${validationErrors.message ? 'border-red-500' : ''}`}
+                    className={`resize-none ${validationErrors.message ? 'border-destructive' : ''}`}
                     aria-required="true"
                     aria-invalid={!!validationErrors.message}
                     aria-describedby={validationErrors.message ? 'message-error message-hint' : 'message-hint'}
@@ -337,19 +337,19 @@ export function ContactModal({
                     {formData.message.length}/500 characters
                   </p>
                   {validationErrors.message && (
-                    <p id="message-error" className="text-sm text-red-600" role="alert">
+                    <p id="message-error" className="text-sm text-destructive" role="alert">
                       {validationErrors.message}
                     </p>
                   )}
                 </div>
 
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4" role="alert">
+                  <div className="theme-danger p-4" role="alert">
                     <div className="flex items-start gap-2">
-                      <span className="text-red-600 text-xl" aria-hidden="true">⚠️</span>
+                      <span className="text-destructive text-xl" aria-hidden="true">⚠️</span>
                       <div>
-                        <p className="font-semibold text-red-900 text-sm mb-1">Unable to send inquiry</p>
-                        <p className="text-red-800 text-sm">{error}</p>
+                        <p className="font-semibold text-sm mb-1">Unable to send inquiry</p>
+                        <p className="text-sm">{error}</p>
                       </div>
                     </div>
                   </div>

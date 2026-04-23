@@ -15,7 +15,7 @@ export default function SignOutPage() {
 
 	return (
 		<div className="container flex min-h-screen items-center justify-center py-8">
-			<Card className="w-full max-w-md">
+			<Card className="w-full max-w-md bg-card/90 backdrop-blur-sm shadow-lg">
 				<CardHeader>
 					<CardTitle>Sign Out</CardTitle>
 					<CardDescription>Are you sure you want to sign out?</CardDescription>

@@ -54,7 +54,49 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at 12% 10%, hsl(var(--primary) / 0.14), transparent 34%),
+      radial-gradient(circle at 88% 2%, hsl(var(--accent) / 0.2), transparent 30%),
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
+  }
+}
+
+@layer components {
+  .site-shell {
+    @apply relative min-h-screen;
+  }
+
+  .site-shell::before {
+    content: '';
+    @apply pointer-events-none fixed inset-0 -z-10 opacity-80;
+    background-image:
+      radial-gradient(circle at 10% 20%, hsl(var(--primary) / 0.12), transparent 32%),
+      radial-gradient(circle at 90% 80%, hsl(var(--accent) / 0.16), transparent 30%);
+  }
+
+  .page-wrap {
+    @apply container mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8;
+  }
+
+  .theme-panel {
+    @apply rounded-2xl border border-border/70 bg-card/90 shadow-sm backdrop-blur-sm;
+  }
+
+  .theme-pill {
+    @apply inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary;
+  }
+
+  .theme-note {
+    @apply rounded-xl border border-border/80 bg-secondary/35 p-3 text-sm text-muted-foreground;
+  }
+
+  .theme-success {
+    @apply rounded-lg border border-primary/30 bg-primary/10 text-foreground;
+  }
+
+  .theme-danger {
+    @apply rounded-lg border border-destructive/30 bg-destructive/10 text-foreground;
   }
 }
 

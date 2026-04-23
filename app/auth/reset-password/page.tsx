@@ -67,10 +67,10 @@ function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-secondary/40 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-xl">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl bg-card/90 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <div className="mx-auto w-16 h-16 bg-destructive/15 rounded-full flex items-center justify-center mb-4">
               <span className="text-3xl">❌</span>
             </div>
             <CardTitle className="text-2xl">Invalid Reset Link</CardTitle>
@@ -93,10 +93,10 @@ function ResetPasswordForm() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-secondary/40 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-xl">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl bg-card/90 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <div className="mx-auto w-16 h-16 bg-primary/15 rounded-full flex items-center justify-center mb-4">
               <span className="text-3xl">✅</span>
             </div>
             <CardTitle className="text-2xl">Password Reset!</CardTitle>
@@ -105,8 +105,8 @@ function ResetPasswordForm() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-              <p className="text-sm text-green-800">
+            <div className="theme-success p-4 text-center">
+              <p className="text-sm">
                 Redirecting to sign in page...
               </p>
             </div>
@@ -120,8 +120,8 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/40 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-xl">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-xl bg-card/90 backdrop-blur-sm">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <span className="text-3xl">🔑</span>
@@ -167,16 +167,16 @@ function ResetPasswordForm() {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              <div className="theme-danger px-4 py-3">
                 {error}
               </div>
             )}
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-xs text-blue-800 font-medium mb-1">
+            <div className="theme-note">
+              <p className="text-xs font-medium mb-1">
                 🔒 Password Tips:
               </p>
-              <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
+              <ul className="text-xs space-y-1 list-disc list-inside">
                 <li>Use a mix of letters, numbers, and symbols</li>
                 <li>Avoid common words or personal information</li>
                 <li>Make it unique - don't reuse passwords</li>
@@ -217,7 +217,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-background to-secondary/40 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading...</p>

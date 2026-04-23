@@ -60,7 +60,7 @@ function ServiceCard({ service }: { service: Service }) {
         aria-pressed={isFavorite}
       >
         <Heart
-          className={`h-5 w-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400'}`}
+          className={`h-5 w-5 ${isFavorite ? 'fill-destructive text-destructive' : 'text-muted-foreground'}`}
           aria-hidden="true"
         />
       </button>
@@ -75,7 +75,7 @@ function ServiceCard({ service }: { service: Service }) {
               <span className="truncate">{service.business.businessName}</span>
               {isVerified && (
                 <span title="Verified Provider" className="flex-shrink-0">
-                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 ml-1" aria-label="Verified provider" />
+                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary ml-1" aria-label="Verified provider" />
                 </span>
               )}
             </CardDescription>
@@ -98,7 +98,7 @@ function ServiceCard({ service }: { service: Service }) {
 
         {service.business.averageRating && (
           <div className="flex items-center gap-2">
-            <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-yellow-400 text-yellow-400" />
+            <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-primary text-primary" />
             <span className="font-semibold text-sm sm:text-base">
               {service.business.averageRating.toFixed(1)}
             </span>
@@ -137,7 +137,7 @@ function ServiceCard({ service }: { service: Service }) {
               {service.serviceTypes.slice(0, 2).map((type) => (
                 <span
                   key={type.id}
-                  className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs sm:text-sm font-medium text-blue-700 border border-blue-200"
+                  className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs sm:text-sm font-medium text-primary border border-primary/20"
                 >
                   {type.name}
                 </span>
@@ -158,7 +158,7 @@ function ServiceCard({ service }: { service: Service }) {
               {service.disabilities.slice(0, 2).map((disability) => (
                 <span
                   key={disability.id}
-                  className="inline-flex items-center rounded-md bg-sky-50 px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs sm:text-sm font-medium text-sky-700 border border-sky-200"
+                  className="inline-flex items-center rounded-md bg-accent px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs sm:text-sm font-medium text-accent-foreground border border-border"
                 >
                   {disability.name}
                 </span>
@@ -192,10 +192,10 @@ function ServiceCard({ service }: { service: Service }) {
         </div>
 
         {isVerified && (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3 sm:p-4">
+          <div className="theme-success p-3 sm:p-4">
             <div className="flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 mt-0.5 flex-shrink-0" />
-              <p className="text-xs sm:text-sm text-green-800">
+              <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 flex-shrink-0" />
+              <p className="text-xs sm:text-sm">
                 <span className="font-semibold">Verified Provider</span>
                 <span className="hidden sm:inline">: Confirmed credentials and positive reviews.</span>
               </p>

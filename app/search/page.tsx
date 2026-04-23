@@ -192,7 +192,7 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+    <div className="min-h-screen">
       {/* Skip to search results for screen readers and keyboard users */}
       <a href="#search-results" className="skip-to-main">
         Skip to search results
@@ -207,7 +207,7 @@ export default function SearchPage() {
         className="sr-only"
       />
       
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 lg:py-8">
+      <div className="page-wrap">
         {/* Search Bar & Filters Button */}
         <div className="mb-4 sm:mb-6 lg:mb-8">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6">Find Special Needs Services</h1>
@@ -244,13 +244,13 @@ export default function SearchPage() {
                 <SheetTrigger asChild>
                   <Button 
                     size="lg" 
-                    className="h-11 sm:h-12 gap-2 bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl transition-all flex-1 sm:flex-none sm:px-6"
+                    className="h-11 sm:h-12 gap-2 shadow-sm transition-all flex-1 sm:flex-none sm:px-6"
                     aria-label={`Filters${(activeFilters.disabilities.length + activeFilters.serviceTypes.length) > 0 ? `, ${activeFilters.disabilities.length + activeFilters.serviceTypes.length} active` : ''}`}
                   >
                     <Filter className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
                     <span className="font-semibold text-sm sm:text-base">Filters</span>
                     {(activeFilters.disabilities.length + activeFilters.serviceTypes.length) > 0 && (
-                      <span className="ml-1 bg-white text-sky-700 rounded-full px-2 py-0.5 text-xs font-bold" aria-hidden="true">
+                      <span className="ml-1 bg-background text-primary rounded-full px-2 py-0.5 text-xs font-bold" aria-hidden="true">
                         {activeFilters.disabilities.length + activeFilters.serviceTypes.length}
                       </span>
                     )}
@@ -329,12 +329,12 @@ export default function SearchPage() {
                   {activeFilters.disabilities.map((disability) => (
                     <span
                       key={disability.id}
-                      className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200 text-xs sm:text-sm"
+                      className="theme-pill"
                     >
                       <span className="truncate max-w-[120px] sm:max-w-none">{disability.name}</span>
                       <button
                         onClick={() => removeDisabilityFilter(disability.id)}
-                        className="hover:bg-sky-100 rounded-full p-0.5 ml-1 flex-shrink-0 min-w-[20px] min-h-[20px] flex items-center justify-center"
+                        className="hover:bg-primary/10 rounded-full p-0.5 ml-1 flex-shrink-0 min-w-[20px] min-h-[20px] flex items-center justify-center"
                         aria-label={`Remove ${disability.name} filter`}
                       >
                         <X className="h-3 w-3" aria-hidden="true" />
@@ -344,12 +344,12 @@ export default function SearchPage() {
                   {activeFilters.serviceTypes.map((serviceType) => (
                     <span
                       key={serviceType.id}
-                      className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs sm:text-sm"
+                      className="theme-pill"
                     >
                       <span className="truncate max-w-[120px] sm:max-w-none">{serviceType.name}</span>
                       <button
                         onClick={() => removeServiceTypeFilter(serviceType.id)}
-                        className="hover:bg-blue-100 rounded-full p-0.5 ml-1 flex-shrink-0 min-w-[20px] min-h-[20px] flex items-center justify-center"
+                        className="hover:bg-primary/10 rounded-full p-0.5 ml-1 flex-shrink-0 min-w-[20px] min-h-[20px] flex items-center justify-center"
                         aria-label={`Remove ${serviceType.name} filter`}
                       >
                         <X className="h-3 w-3" aria-hidden="true" />
@@ -372,17 +372,17 @@ export default function SearchPage() {
           {/* Results */}
           <div>
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6" role="alert">
+              <div className="theme-danger p-4 sm:p-6 mb-4 sm:mb-6" role="alert">
                 <div className="flex items-start gap-3">
-                  <div className="text-red-600 text-xl sm:text-2xl flex-shrink-0" aria-hidden="true">⚠️</div>
+                  <div className="text-destructive text-xl sm:text-2xl flex-shrink-0" aria-hidden="true">⚠️</div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-red-900 mb-1 text-sm sm:text-base">Error Loading Services</h3>
-                    <p className="text-red-700 text-xs sm:text-sm mb-3 break-words">{error}</p>
+                    <h3 className="font-semibold mb-1 text-sm sm:text-base">Error Loading Services</h3>
+                    <p className="text-xs sm:text-sm mb-3 break-words">{error}</p>
                     <Button
                       onClick={() => handleSearch({ query: searchQuery, ...activeFilters })}
                       variant="outline"
                       size="sm"
-                      className="border-red-300 text-red-700 hover:bg-red-100"
+                      className="border-destructive/50 text-destructive hover:bg-destructive/10"
                     >
                       Try Again
                     </Button>
