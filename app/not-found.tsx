@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
-      <div className="max-w-md w-full bg-card rounded-2xl shadow-lg p-6 sm:p-8">
+      <div className="theme-panel max-w-md w-full p-6 sm:p-8">
         <div className="text-center">
           <h1 className="text-7xl sm:text-9xl font-bold text-primary">404</h1>
           <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2 mt-4">
