@@ -42,10 +42,10 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-secondary/40 flex items-center justify-center px-4 py-8 sm:p-4">
-        <Card className="w-full max-w-md shadow-xl">
+      <div className="min-h-screen flex items-center justify-center px-4 py-8 sm:p-4">
+        <Card className="w-full max-w-md shadow-xl bg-card/90 backdrop-blur-sm">
           <CardHeader className="text-center px-4 sm:px-6">
-            <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-primary/15 rounded-full flex items-center justify-center mb-4">
               <span className="text-2xl sm:text-3xl">✅</span>
             </div>
             <CardTitle className="text-xl sm:text-2xl">Check Your Email</CardTitle>
@@ -54,11 +54,11 @@ export default function ForgotPasswordPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 px-4 sm:px-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-              <p className="text-sm text-blue-800">
+            <div className="theme-note">
+              <p className="text-sm">
                 <strong>📬 Next Steps:</strong>
               </p>
-              <ul className="text-xs sm:text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
+              <ul className="text-xs sm:text-sm mt-2 space-y-1 list-disc list-inside">
                 <li>Check your email inbox (and spam folder)</li>
                 <li>Click the reset link in the email</li>
                 <li>The link expires in 1 hour</li>
@@ -87,8 +87,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/40 flex items-center justify-center px-4 py-8 sm:p-4">
-      <Card className="w-full max-w-md shadow-xl">
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 sm:p-4">
+      <Card className="w-full max-w-md shadow-xl bg-card/90 backdrop-blur-sm">
         <CardHeader className="text-center px-4 sm:px-6">
           <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <span className="text-2xl sm:text-3xl">🔐</span>
@@ -115,7 +115,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-3 rounded text-sm">
+              <div className="theme-danger px-3 sm:px-4 py-3 text-sm">
                 {error}
               </div>
             )}

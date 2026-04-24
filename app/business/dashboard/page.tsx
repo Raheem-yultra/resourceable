@@ -21,8 +21,8 @@ export default async function BusinessDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-4 sm:py-8">
+    <div className="min-h-screen">
+      <div className="page-wrap py-4 sm:py-8">
         {/* Welcome Header */}
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-4xl font-bold mb-2">Business Dashboard</h1>
@@ -112,15 +112,15 @@ export default async function BusinessDashboard() {
         </div>
 
         {/* Info Banner */}
-        <div className="mt-6 sm:mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">
-          <h3 className="font-semibold text-blue-900 mb-2 text-sm sm:text-base">🎉 Welcome to ResourceAble!</h3>
-          <p className="text-xs sm:text-sm text-blue-800 mb-3 sm:mb-4">
+        <div className="mt-6 sm:mt-8 theme-note p-4 sm:p-6">
+          <h3 className="font-semibold mb-2 text-sm sm:text-base">🎉 Welcome to ResourceAble!</h3>
+          <p className="text-xs sm:text-sm mb-3 sm:mb-4">
             Your account has been created successfully. Complete your comprehensive business profile to showcase all your services, specializations, and details to families in need of support.
           </p>
-          <p className="text-xs text-blue-700">
+          <p className="text-xs">
             <strong>One Profile, Complete Information:</strong> Instead of creating multiple service listings, you'll have one comprehensive profile where you can add all your services, disabilities served, age groups, pricing, and availability.
           </p>
-          <p className="text-xs text-blue-700 mt-2">
+          <p className="text-xs mt-2">
             Note: Your business will be visible to customers once approved by our admin team.
           </p>
         </div>

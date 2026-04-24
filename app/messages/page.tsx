@@ -17,7 +17,7 @@ export default async function MessagesInboxPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
+    <div className="page-wrap max-w-5xl">
       <MessageInbox currentUserId={session.user.id} />
     </div>
   );

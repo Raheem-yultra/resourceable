@@ -118,8 +118,8 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-muted px-4 py-6 sm:py-12">
-      <Card className="w-full max-w-md shadow-lg">
+    <div className="min-h-screen w-full flex items-center justify-center px-4 py-6 sm:py-12">
+      <Card className="w-full max-w-md shadow-lg bg-card/90 backdrop-blur-sm">
         <CardHeader className="space-y-3 text-center px-4 sm:px-6">
           <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center">
             <Building2 className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
@@ -250,7 +250,7 @@ export default function SignUpPage() {
                 />
               </div>
               {fieldErrors.phone && (
-                <p className="text-xs text-red-600">{fieldErrors.phone}</p>
+                <p className="text-xs text-destructive">{fieldErrors.phone}</p>
               )}
               <p className="text-xs text-muted-foreground">
                 {formData.role === 'BUSINESS' 
@@ -301,7 +301,7 @@ export default function SignUpPage() {
 
             {/* Error Message */}
             {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+              <div className="p-3 text-sm theme-danger">
                 {error}
               </div>
             )}

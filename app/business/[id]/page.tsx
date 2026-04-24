@@ -88,17 +88,17 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
   const secondaryDisabilities = business.businessDisabilities.filter((bd: any) => !bd.isPrimary);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="border-b">
-        <div className="container mx-auto px-4 py-3 sm:py-4">
+        <div className="page-wrap py-3 sm:py-4">
           <Link href="/search" className="text-primary hover:underline text-sm sm:text-base inline-flex items-center min-h-[44px]">
             ← Back to Search
           </Link>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-4 sm:py-8">
+      <div className="page-wrap py-4 sm:py-8">
         <div className="grid lg:grid-cols-3 gap-4 sm:gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -129,7 +129,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
 
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3">
                       {business.verificationStatus === 'APPROVED' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 sm:px-3 py-1 text-xs font-medium text-green-700">
+                        <span className="theme-pill">
                           ✓ Verified
                         </span>
                       )}
@@ -263,7 +263,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
                         )}
                         {service.insuranceAccepted && (
                           <div>
-                            <span className="text-green-600">✓ Insurance Accepted</span>
+                            <span className="text-primary">✓ Insurance Accepted</span>
                           </div>
                         )}
                       </div>
@@ -274,7 +274,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
                           {service.serviceTypes.map((st: any) => (
                             <span
                               key={st.id}
-                              className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700"
+                              className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
                             >
                               {st.serviceType.name}
                             </span>
@@ -288,7 +288,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
                           {service.serviceDisabilities.slice(0, 5).map((sd: any) => (
                             <span
                               key={sd.id}
-                              className="inline-flex items-center rounded-md bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700"
+                              className="inline-flex items-center rounded-md bg-accent px-2 py-1 text-xs font-medium text-accent-foreground"
                             >
                               {sd.disability.name}
                             </span>
@@ -321,7 +321,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
                           {Array.from({ length: 5 }).map((_, i) => (
                             <span
                               key={i}
-                              className={i < review.rating ? 'text-yellow-500' : 'text-gray-300'}
+                              className={i < review.rating ? 'text-primary' : 'text-muted-foreground/40'}
                             >
                               ★
                             </span>

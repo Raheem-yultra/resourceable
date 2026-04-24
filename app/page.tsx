@@ -27,7 +27,7 @@ export default function HomePage() {
           className="relative w-full min-h-[calc(100vh-4rem)] sm:min-h-[85vh] flex items-center justify-center px-4 sm:px-6 lg:px-12 py-12 sm:py-20 lg:py-32 overflow-hidden"
           aria-labelledby="hero-title"
         >
-          <div className="relative z-10 w-full max-w-7xl">
+          <div className="relative z-10 w-full max-w-7xl theme-panel px-4 py-10 sm:px-8 sm:py-14">
             <div className="mb-6 sm:mb-8 lg:mb-12 flex flex-col items-center gap-1 sm:gap-2">
               <h1 id="hero-title" className="sr-only">ResourceAble - Connecting Special Needs with Quality Care</h1>
               <TextCursorProximity
@@ -101,11 +101,11 @@ export default function HomePage() {
         </section>
 
         {/* How It Works Section */}
-        <section id="about" className="w-full bg-muted py-12 sm:py-16 lg:py-20" aria-labelledby="how-it-works">
+        <section id="about" className="w-full py-12 sm:py-16 lg:py-20" aria-labelledby="how-it-works">
           <div className="w-full px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto">
             <h2 id="how-it-works" className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mb-8 sm:mb-12 lg:mb-16">How It Works</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12">
-              <div className="text-center">
+              <div className="text-center theme-panel p-6">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5 lg:mb-6 text-primary-foreground text-xl sm:text-2xl font-bold" aria-hidden="true">
                   1
                 </div>
@@ -114,7 +114,7 @@ export default function HomePage() {
                   Browse services by location, condition, and type. No account needed to search.
                 </p>
               </div>
-              <div className="text-center">
+              <div className="text-center theme-panel p-6">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5 lg:mb-6 text-primary-foreground text-xl sm:text-2xl font-bold" aria-hidden="true">
                   2
                 </div>
@@ -123,7 +123,7 @@ export default function HomePage() {
                   Send inquiries or sign in to message providers directly and get personalized support.
                 </p>
               </div>
-              <div className="text-center">
+              <div className="text-center theme-panel p-6">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5 lg:mb-6 text-primary-foreground text-xl sm:text-2xl font-bold" aria-hidden="true">
                   3
                 </div>

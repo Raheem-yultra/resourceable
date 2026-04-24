@@ -1,10 +1,7 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { ConditionalNavbar } from '@/components/layout/ConditionalNavbar';
 import { Providers } from '@/components/layout/Providers';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'ResourceAble - Special Needs Services Directory',
@@ -38,7 +35,7 @@ export default function RootLayout({
         <link rel="manifest" href="/site.webmanifest" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={inter.className}>
+      <body className="site-shell">
         <Providers>
           <a
             href="#main-content"
@@ -47,7 +44,7 @@ export default function RootLayout({
             Skip to main content
           </a>
           <ConditionalNavbar />
-          <main id="main-content">{children}</main>
+          <main id="main-content" className="relative z-0">{children}</main>
         </Providers>
       </body>
     </html>

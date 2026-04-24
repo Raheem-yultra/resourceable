@@ -3,6 +3,8 @@
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 const errorMessages: Record<string, string> = {
   Configuration: 'There is a problem with the server configuration. Please try again later.',
@@ -29,12 +31,12 @@ function AuthErrorContent() {
     : errorMessages.Default;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/30 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-red-100">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <Card className="max-w-md w-full shadow-lg bg-card/90 backdrop-blur-sm">
+        <CardHeader className="text-center">
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-destructive/15">
             <svg
-              className="h-8 w-8 text-red-600"
+              className="h-8 w-8 text-destructive"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -47,9 +49,9 @@ function AuthErrorContent() {
               />
             </svg>
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-foreground">
+          <CardTitle className="mt-6 text-3xl font-bold text-foreground">
             Authentication Error
-          </h2>
+          </CardTitle>
           <p className="mt-2 text-sm text-muted-foreground">
             {errorMessage}
           </p>
@@ -58,32 +60,26 @@ function AuthErrorContent() {
               Error code: {error}
             </p>
           )}
-        </div>
+        </CardHeader>
 
-        <div className="mt-8 space-y-4">
-          <Link
-            href="/auth/signin"
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-          >
-            Try signing in again
-          </Link>
-          <Link
-            href="/"
-            className="w-full flex justify-center py-3 px-4 border border-border rounded-md shadow-sm text-sm font-medium text-foreground bg-card hover:bg-secondary/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-          >
-            Go to homepage
-          </Link>
-        </div>
+        <CardContent className="mt-2 space-y-4">
+          <Button asChild className="w-full">
+            <Link href="/auth/signin">Try signing in again</Link>
+          </Button>
+          <Button asChild variant="outline" className="w-full">
+            <Link href="/">Go to homepage</Link>
+          </Button>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            Need help?{' '}
-            <Link href="/contact" className="text-primary hover:text-primary/80">
-              Contact support
-            </Link>
-          </p>
-        </div>
-      </div>
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Need help?{' '}
+              <Link href="/contact" className="text-primary hover:text-primary/80">
+                Contact support
+              </Link>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -91,7 +87,7 @@ function AuthErrorContent() {
 export default function AuthErrorPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/30">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     }>

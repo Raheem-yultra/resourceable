@@ -17,7 +17,7 @@ export default function Error({
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
-      <div className="max-w-md w-full bg-card rounded-2xl shadow-lg p-6 sm:p-8">
+      <div className="theme-panel max-w-md w-full p-6 sm:p-8">
         <div className="text-center">
           <div className="text-5xl sm:text-6xl mb-4">⚠️</div>
           <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
