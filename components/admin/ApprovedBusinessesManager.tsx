@@ -218,11 +218,11 @@ export function ApprovedBusinessesManager() {
         <div className="grid gap-4">
           {filteredBusinesses.map((business) => (
             <Card key={business.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 border-b">
+              <CardHeader className="bg-primary/5 border-b">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3 flex-1">
-                    <div className="p-2 bg-white rounded-lg shadow-sm">
-                      <Building2 className="h-5 w-5 text-green-600" />
+                    <div className="p-2 bg-background rounded-lg shadow-sm border border-border">
+                      <Building2 className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1">
                       <CardTitle className="text-xl mb-1">{business.businessName}</CardTitle>
@@ -231,10 +231,10 @@ export function ApprovedBusinessesManager() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                    <CheckCircle className="h-3 w-3 mr-1" />
+                  <span className="theme-pill">
+                    <CheckCircle className="h-3 w-3" />
                     Approved
-                  </div>
+                  </span>
                 </div>
               </CardHeader>
 
@@ -351,9 +351,9 @@ export function ApprovedBusinessesManager() {
           {selectedBusiness && (
             <div className="py-4 space-y-6">
               {/* Business Summary */}
-              <div className="p-4 bg-gradient-to-r from-sky-50 to-cyan-50 rounded-lg border border-sky-200">
+              <div className="p-4 bg-secondary/40 rounded-lg border border-border">
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
+                  <Building2 className="h-4 w-4 text-primary" />
                   Business Profile
                 </h3>
                 <div className="grid md:grid-cols-2 gap-3 text-sm">
@@ -377,16 +377,16 @@ export function ApprovedBusinessesManager() {
 
               {/* Disabilities Served */}
               {selectedBusiness.businessDisabilities && selectedBusiness.businessDisabilities.length > 0 && (
-                <div className="p-4 bg-sky-50 rounded-lg border border-sky-200">
+                <div className="p-4 bg-accent/30 rounded-lg border border-border">
                   <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <Users className="h-4 w-4 text-sky-600" />
+                    <Users className="h-4 w-4 text-primary" />
                     Disabilities & Conditions Served
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {selectedBusiness.businessDisabilities.map((bd, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center rounded-full bg-card px-3 py-1 text-sm font-medium text-sky-700 border border-sky-300"
+                        className="theme-pill"
                       >
                         {bd.disability.name}
                       </span>
@@ -427,7 +427,7 @@ export function ApprovedBusinessesManager() {
                               href={`/business/${selectedBusiness.id}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-700"
+                              className="text-primary hover:text-primary/80 transition-colors"
                               title="View public listing"
                             >
                               <ExternalLink className="h-4 w-4" />
@@ -475,12 +475,12 @@ export function ApprovedBusinessesManager() {
                               <Label className="text-xs font-semibold text-muted-foreground">Service Delivery Options</Label>
                               <div className="flex gap-2 mt-1">
                                 {service.inPersonOption && (
-                                  <span className="inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700 border border-green-200">
+                                  <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary border border-primary/20">
                                     ✓ In-Person
                                   </span>
                                 )}
                                 {service.virtualOption && (
-                                  <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 border border-blue-200">
+                                  <span className="inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground border border-border">
                                     ✓ Virtual/Online
                                   </span>
                                 )}
@@ -530,9 +530,9 @@ export function ApprovedBusinessesManager() {
                     ))}
                     
                     {selectedBusiness.services.length > 1 && (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-                        <p className="font-medium text-yellow-800">⚠️ Multiple Service Records</p>
-                        <p className="text-yellow-700 text-xs mt-1">
+                      <div className="theme-note border border-border/80 rounded-lg p-3 text-sm">
+                        <p className="font-medium">⚠️ Multiple Service Records</p>
+                        <p className="text-xs mt-1">
                           This business has {selectedBusiness.services.length} separate service entries. 
                           Consider consolidating into one comprehensive listing.
                         </p>
@@ -555,7 +555,7 @@ export function ApprovedBusinessesManager() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-600" />
+              <AlertTriangle className="h-5 w-5 text-destructive" />
               {actionType === 'suspend' ? 'Suspend Business' : 'Remove Business'}
             </DialogTitle>
             <DialogDescription>

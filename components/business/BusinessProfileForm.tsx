@@ -144,15 +144,15 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Success Message */}
       {success && (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800">
-          <CheckCircle className="h-5 w-5" />
+        <div className="theme-success p-4 flex items-center gap-2">
+          <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
           <span>Profile updated successfully! Redirecting to dashboard...</span>
         </div>
       )}
 
       {/* Error Message */}
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
+        <div className="theme-danger p-4">
           {error}
         </div>
       )}
