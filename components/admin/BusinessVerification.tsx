@@ -151,37 +151,31 @@ export function AdminBusinessVerification() {
   return (
     <div className="space-y-6">
       {/* Filter Tabs */}
-      <div className="flex gap-2 border-b">
-        <button
+      <div className="flex gap-2 border-b pb-2">
+        <Button
+          variant={statusFilter === 'PENDING' ? 'default' : 'ghost'}
+          size="sm"
           onClick={() => setStatusFilter('PENDING')}
-          className={`px-4 py-2 font-medium transition-colors ${
-            statusFilter === 'PENDING'
-              ? 'border-b-2 border-primary text-primary'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
+          className="min-h-[40px]"
         >
           Pending ({businesses.length})
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={statusFilter === 'APPROVED' ? 'default' : 'ghost'}
+          size="sm"
           onClick={() => setStatusFilter('APPROVED')}
-          className={`px-4 py-2 font-medium transition-colors ${
-            statusFilter === 'APPROVED'
-              ? 'border-b-2 border-green-600 text-green-600'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
+          className="min-h-[40px]"
         >
           Approved
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={statusFilter === 'REJECTED' ? 'destructive' : 'ghost'}
+          size="sm"
           onClick={() => setStatusFilter('REJECTED')}
-          className={`px-4 py-2 font-medium transition-colors ${
-            statusFilter === 'REJECTED'
-              ? 'border-b-2 border-red-600 text-red-600'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
+          className="min-h-[40px]"
         >
           Rejected
-        </button>
+        </Button>
       </div>
 
       {businesses.length === 0 ? (

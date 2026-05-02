@@ -154,7 +154,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
 
                   {isOwner && (
                     <Button asChild variant="outline" className="w-full sm:w-auto min-h-[44px]">
-                      <Link href="/dashboard/business/edit">Edit Profile</Link>
+                      <Link href="/business/profile">Edit Profile</Link>
                     </Button>
                   )}
                 </div>

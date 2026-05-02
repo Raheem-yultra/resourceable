@@ -1,9 +1,9 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Star, CheckCircle, Heart, Search } from 'lucide-react';
+import { MapPin, Star, CheckCircle, Heart, Search, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { ContactModal } from './ContactModal';
 
@@ -42,6 +42,8 @@ interface Service {
     website?: string;
   };
 }
+
+const PAGE_SIZE = 12;
 
 interface ServiceListProps {
   services: Service[];
@@ -208,6 +210,20 @@ function ServiceCard({ service }: { service: Service }) {
 }
 
 export function ServiceList({ services }: ServiceListProps) {
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const visibleServices = services.slice(0, visibleCount);
+  const hasMore = visibleCount < services.length;
+
+  const handleLoadMore = async () => {
+    setLoadingMore(true);
+    // Small delay to feel responsive and avoid layout flashing
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    setVisibleCount((prev) => prev + PAGE_SIZE);
+    setLoadingMore(false);
+  };
+
   if (services.length === 0) {
     return (
       <div className="text-center py-8 sm:py-12" role="status">
@@ -230,18 +246,35 @@ export function ServiceList({ services }: ServiceListProps) {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2" role="list" aria-label="Search results">
-        {services.map((service) => (
+        {visibleServices.map((service) => (
           <div key={service.id} role="listitem">
             <ServiceCard service={service} />
           </div>
         ))}
       </div>
 
-      {services.length >= 12 && (
-        <div className="flex justify-center pt-6 sm:pt-8">
-          <Button variant="outline" size="lg" className="min-h-[44px] sm:min-h-[48px] px-6 sm:px-8 w-full sm:w-auto">
-            Load More Results
+      {hasMore && (
+        <div className="flex flex-col items-center gap-2 pt-6 sm:pt-8">
+          <Button
+            variant="outline"
+            size="lg"
+            className="min-h-[44px] sm:min-h-[48px] px-6 sm:px-8 w-full sm:w-auto"
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            aria-label={`Load more results (${services.length - visibleCount} remaining)`}
+          >
+            {loadingMore ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
+                Loading...
+              </>
+            ) : (
+              `Load More Results (${services.length - visibleCount} remaining)`
+            )}
           </Button>
+          <p className="text-xs text-muted-foreground">
+            Showing {visibleCount} of {services.length} results
+          </p>
         </div>
       )}
     </div>
