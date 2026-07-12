@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { isProviderActionBlocked } from '@/lib/billing';
 
 // Validation schemas
 const sendMessageSchema = z.object({
@@ -87,6 +88,15 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // A provider whose billing has lapsed (suspended/canceled) can't respond to
+    // inquiries. Families (USER) are never blocked.
+    if (session.user.role === 'BUSINESS' && (await isProviderActionBlocked(session.user.id))) {
+      return NextResponse.json(
+        { error: 'Your subscription is inactive. Reactivate billing to send messages.', code: 'BILLING_INACTIVE' },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();
@@ -192,6 +202,7 @@ async function getConversations(
 
   // Get all messages for this user
   const messages = await prisma.message.findMany({
+    relationLoadStrategy: 'join',
     where,
     include: {
       sender: {

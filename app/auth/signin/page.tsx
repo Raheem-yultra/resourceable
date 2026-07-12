@@ -20,11 +20,21 @@ export default function SignInPage() {
     password: '',
   });
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Inline field validation before hitting the network
+    const fe: { email?: string; password?: string } = {};
+    if (!formData.email.trim()) fe.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) fe.email = 'Enter a valid email address';
+    if (!formData.password) fe.password = 'Password is required';
+    setFieldErrors(fe);
+    if (Object.keys(fe).length > 0) return;
+
     setLoading(true);
 
     try {
@@ -80,7 +90,7 @@ export default function SignInPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             {/* Email Field */}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">Email</Label>
@@ -91,11 +101,16 @@ export default function SignInPage() {
                   type="email"
                   placeholder="you@example.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="pl-10"
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: undefined });
+                  }}
+                  className={`pl-10 ${fieldErrors.email ? 'border-destructive' : ''}`}
+                  aria-invalid={!!fieldErrors.email}
                   required
                 />
               </div>
+              {fieldErrors.email && <p className="field-error" role="alert">{fieldErrors.email}</p>}
             </div>
 
             {/* Password Field */}
@@ -116,16 +131,21 @@ export default function SignInPage() {
                   type="password"
                   placeholder="••••••••"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="pl-10"
+                  onChange={(e) => {
+                    setFormData({ ...formData, password: e.target.value });
+                    if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: undefined });
+                  }}
+                  className={`pl-10 ${fieldErrors.password ? 'border-destructive' : ''}`}
+                  aria-invalid={!!fieldErrors.password}
                   required
                 />
               </div>
+              {fieldErrors.password && <p className="field-error" role="alert">{fieldErrors.password}</p>}
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="p-3 text-sm theme-danger">
+              <div className="p-3 text-sm theme-danger" role="alert">
                 {error}
               </div>
             )}

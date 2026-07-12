@@ -1,5 +1,12 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+/**
+ * Reset a user's password.
+ *
+ * Usage: node scripts/reset-password.js <email> <new-password>
+ * Example: node scripts/reset-password.js user@example.com MyNewPass123
+ */
+
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
@@ -8,38 +15,48 @@ async function resetPassword() {
   const newPassword = process.argv[3];
 
   if (!email || !newPassword) {
-    console.log('Usage: node scripts/reset-password.js <email> <new-password>');
-    console.log('Example: node scripts/reset-password.js test@test.com newpassword123');
+    console.log('\n❌ Usage: node scripts/reset-password.js <email> <new-password>');
+    console.log('Example: node scripts/reset-password.js user@example.com MyNewPass123\n');
     process.exit(1);
   }
 
   try {
-    // Find user
+    console.log('\n🔍 Looking for user...');
+
+    // Emails are stored lowercased at signup — normalize before lookup.
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email: email.toLowerCase() },
+      select: { id: true, name: true, email: true, role: true },
     });
 
     if (!user) {
-      console.log(`❌ User with email ${email} not found`);
+      console.log(`\n❌ User with email "${email}" not found\n`);
       process.exit(1);
     }
 
-    // Hash new password
+    console.log(`\n✅ Found user:`);
+    console.log(`   Name: ${user.name || 'No name'}`);
+    console.log(`   Email: ${user.email}`);
+    console.log(`   Role: ${user.role}`);
+    console.log(`   ID: ${user.id}`);
+
+    console.log('\n🔐 Hashing new password...');
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password
+    console.log('💾 Updating password in database...');
     await prisma.user.update({
-      where: { email },
-      data: { password: hashedPassword }
+      where: { email: email.toLowerCase() },
+      data: { password: hashedPassword },
     });
 
-    console.log(`✅ Password updated successfully for ${email}`);
-    console.log(`   Name: ${user.name}`);
-    console.log(`   Role: ${user.role}`);
+    console.log('\n✅ SUCCESS! Password has been reset.');
+    console.log(`\n📋 Login Credentials:`);
+    console.log(`   Email: ${user.email}`);
     console.log(`   New Password: ${newPassword}`);
-
+    console.log(`\n🔗 Sign in at: http://localhost:3000/auth/signin\n`);
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error('\n❌ Error:', error);
+    process.exit(1);
   } finally {
     await prisma.$disconnect();
   }

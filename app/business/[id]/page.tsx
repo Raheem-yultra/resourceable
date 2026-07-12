@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BusinessContactCard } from '@/components/business/BusinessContactCard';
+import { isBillingBlocked } from '@/lib/billing';
 
 interface BusinessPageProps {
   params: { id: string };
@@ -13,6 +14,7 @@ interface BusinessPageProps {
 
 async function getBusinessById(id: string) {
   return await prisma.business.findUnique({
+    relationLoadStrategy: 'join',
     where: { id },
     include: {
       user: {
@@ -75,13 +77,19 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
     notFound();
   }
 
-  // Only show approved businesses to non-owners
-  if (business.verificationStatus !== 'APPROVED' && business.userId !== session?.user?.id) {
+  // Show to non-owners only when approved, active (not suspended), and billing
+  // is current. Lapsed billing (suspended/canceled) hides the listing publicly;
+  // the owner can still view their own page to reactivate.
+  const isOwner = business.userId === session?.user?.id;
+  const publiclyVisible =
+    business.verificationStatus === 'APPROVED' &&
+    business.isActive &&
+    !isBillingBlocked(business.subscriptionStatus);
+  if (!publiclyVisible && !isOwner) {
     notFound();
   }
 
   const canContact = session?.user && session.user.id !== business.userId;
-  const isOwner = session?.user?.id === business.userId;
 
   // Group disabilities by primary/secondary
   const primaryDisabilities = business.businessDisabilities.filter((bd: any) => bd.isPrimary);

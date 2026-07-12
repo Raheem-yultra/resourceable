@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { businessService } from '@/services/business.service';
+import { isBillingBlocked } from '@/lib/billing';
 
 export async function GET(
   req: NextRequest,
@@ -12,8 +13,13 @@ export async function GET(
       return NextResponse.json({ error: 'Business not found' }, { status: 404 });
     }
 
-    // Only show approved businesses to public
-    if (business.verificationStatus !== 'APPROVED') {
+    // Only show approved, active (non-suspended) businesses whose billing is
+    // current. Lapsed billing (suspended/canceled) hides the listing publicly.
+    if (
+      business.verificationStatus !== 'APPROVED' ||
+      !business.isActive ||
+      isBillingBlocked(business.subscriptionStatus)
+    ) {
       return NextResponse.json({ error: 'Business not found' }, { status: 404 });
     }
 

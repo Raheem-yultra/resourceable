@@ -135,7 +135,7 @@ export default function SignUpPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
             {/* Role Toggle */}
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium">I am signing up as</legend>
@@ -183,10 +183,12 @@ export default function SignUpPage() {
                   placeholder={formData.role === 'BUSINESS' ? 'Your Business Name' : 'Your Name'}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="pl-10"
+                  className={`pl-10 ${fieldErrors.name ? 'border-destructive' : ''}`}
+                  aria-invalid={!!fieldErrors.name}
                   required
                 />
               </div>
+              {fieldErrors.name && <p className="text-xs text-destructive" role="alert">{fieldErrors.name}</p>}
             </div>
 
             {/* Email Field */}
@@ -200,10 +202,12 @@ export default function SignUpPage() {
                   placeholder="you@example.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="pl-10"
+                  className={`pl-10 ${fieldErrors.email ? 'border-destructive' : ''}`}
+                  aria-invalid={!!fieldErrors.email}
                   required
                 />
               </div>
+              {fieldErrors.email && <p className="text-xs text-destructive" role="alert">{fieldErrors.email}</p>}
             </div>
 
             {/* Zip Code Field */}
@@ -271,13 +275,16 @@ export default function SignUpPage() {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="pl-10"
+                  className={`pl-10 ${fieldErrors.password ? 'border-destructive' : ''}`}
+                  aria-invalid={!!fieldErrors.password}
                   required
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Minimum 8 characters
-              </p>
+              {fieldErrors.password ? (
+                <p className="text-xs text-destructive" role="alert">{fieldErrors.password}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
+              )}
             </div>
 
             {/* Confirm Password Field */}
@@ -293,10 +300,12 @@ export default function SignUpPage() {
                   placeholder="••••••••"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className="pl-10"
+                  className={`pl-10 ${fieldErrors.confirmPassword ? 'border-destructive' : ''}`}
+                  aria-invalid={!!fieldErrors.confirmPassword}
                   required
                 />
               </div>
+              {fieldErrors.confirmPassword && <p className="text-xs text-destructive" role="alert">{fieldErrors.confirmPassword}</p>}
             </div>
 
             {/* Error Message */}

@@ -47,19 +47,15 @@ export function SearchFilters({ onSearch }: SearchFiltersProps) {
       try {
         // Fetch disabilities
         const disabilitiesRes = await fetch('/api/disabilities');
-        console.log('Disabilities response status:', disabilitiesRes.status);
         if (disabilitiesRes.ok) {
           const disabilitiesData = await disabilitiesRes.json();
-          console.log('Disabilities data:', disabilitiesData);
           setDisabilities(disabilitiesData.disabilities || []);
         }
 
         // Fetch service types
         const serviceTypesRes = await fetch('/api/service-types');
-        console.log('Service types response status:', serviceTypesRes.status);
         if (serviceTypesRes.ok) {
           const serviceTypesData = await serviceTypesRes.json();
-          console.log('Service types data:', serviceTypesData);
           setServiceTypes(serviceTypesData.serviceTypes || []);
         }
       } catch (error) {

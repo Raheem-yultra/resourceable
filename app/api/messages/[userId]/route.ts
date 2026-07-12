@@ -52,6 +52,7 @@ export async function GET(
 
     // Get conversation between users
     const messages = await prisma.message.findMany({
+      relationLoadStrategy: 'join',
       where: {
         OR: [
           { senderId: session.user.id, receiverId: partnerId },

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { businessService } from '@/services/business.service';
-import { businessProfileSchema } from '@/lib/validations';
+import { businessProfileUpdateSchema } from '@/lib/validations';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    // Only business owners have a profile to fetch; fail fast rather than run a doomed query
+    if (!session?.user || session.user.role !== 'BUSINESS') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -37,169 +38,136 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await req.json();
-    
-    // Basic validation for required fields
-    if (!body.businessName || body.businessName.trim().length < 2) {
+    // Validate the ENTIRE payload up front so a bad value fails before any write (no partial saves)
+    const parsed = businessProfileUpdateSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      const first = parsed.error.errors[0];
       return NextResponse.json(
-        { error: 'Business name is required and must be at least 2 characters' },
+        { error: first?.message || 'Invalid form data', details: parsed.error.flatten() },
         { status: 400 }
       );
     }
+    const data = parsed.data;
+    const orNull = (v?: string) => (v && v.trim() ? v.trim() : null);
 
-    // Sanitize and validate numeric inputs
-    const yearEstablished = body.yearEstablished ? parseInt(body.yearEstablished) : null;
-    if (yearEstablished && (yearEstablished < 1800 || yearEstablished > new Date().getFullYear())) {
-      return NextResponse.json(
-        { error: 'Invalid year established' },
-        { status: 400 }
-      );
-    }
-
-    const priceMin = body.priceMin ? parseFloat(body.priceMin) : null;
-    const priceMax = body.priceMax ? parseFloat(body.priceMax) : null;
-    
-    if (priceMin && priceMin < 0) {
-      return NextResponse.json({ error: 'Minimum price cannot be negative' }, { status: 400 });
-    }
-    if (priceMax && priceMax < 0) {
-      return NextResponse.json({ error: 'Maximum price cannot be negative' }, { status: 400 });
-    }
-    if (priceMin && priceMax && priceMin > priceMax) {
-      return NextResponse.json({ error: 'Minimum price cannot exceed maximum price' }, { status: 400 });
-    }
-    
     // Update or create business profile
     const business = await prisma.business.upsert({
       where: { userId: session.user.id },
       create: {
         userId: session.user.id,
-        businessName: body.businessName.trim(),
-        businessType: body.businessType?.trim() || null,
-        description: body.description?.trim() || null,
-        phone: body.phone?.trim() || null,
-        email: body.email?.trim() || null,
-        website: body.website?.trim() || null,
-        address: body.address?.trim() || null,
-        addressLine2: body.addressLine2?.trim() || null,
-        city: body.city?.trim() || null,
-        state: body.state?.trim() || null,
-        zipCode: body.zipCode?.trim() || null,
-        yearEstablished,
-        licenseNumber: body.licenseNumber?.trim() || null,
+        businessName: data.businessName.trim(),
+        businessType: orNull(data.businessType),
+        description: orNull(data.description),
+        phone: orNull(data.phone),
+        email: orNull(data.email),
+        website: orNull(data.website),
+        address: orNull(data.address),
+        addressLine2: orNull(data.addressLine2),
+        city: orNull(data.city),
+        state: orNull(data.state),
+        zipCode: orNull(data.zipCode),
+        yearEstablished: data.yearEstablished ?? null,
+        licenseNumber: orNull(data.licenseNumber),
       },
       update: {
-        businessName: body.businessName.trim(),
-        businessType: body.businessType?.trim() || null,
-        description: body.description?.trim() || null,
-        phone: body.phone?.trim() || null,
-        email: body.email?.trim() || null,
-        website: body.website?.trim() || null,
-        address: body.address?.trim() || null,
-        addressLine2: body.addressLine2?.trim() || null,
-        city: body.city?.trim() || null,
-        state: body.state?.trim() || null,
-        zipCode: body.zipCode?.trim() || null,
-        yearEstablished,
-        licenseNumber: body.licenseNumber?.trim() || null,
+        businessName: data.businessName.trim(),
+        businessType: orNull(data.businessType),
+        description: orNull(data.description),
+        phone: orNull(data.phone),
+        email: orNull(data.email),
+        website: orNull(data.website),
+        address: orNull(data.address),
+        addressLine2: orNull(data.addressLine2),
+        city: orNull(data.city),
+        state: orNull(data.state),
+        zipCode: orNull(data.zipCode),
+        yearEstablished: data.yearEstablished ?? null,
+        licenseNumber: orNull(data.licenseNumber),
       },
     });
 
-    // Check if service already exists
+    // The business is backed by a single Service record holding pricing/age/insurance
     const existingService = await prisma.service.findFirst({
       where: { businessId: business.id },
     });
 
-    const serviceSlug = body.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    
-    const capacity = body.capacity ? parseInt(body.capacity) : null;
-    if (capacity && capacity < 0) {
-      return NextResponse.json({ error: 'Capacity cannot be negative' }, { status: 400 });
-    }
-    
-    const serviceData = {
-      name: `${body.businessName} Services`,
-      slug: serviceSlug,
-      description: body.description?.trim() || 'Professional services',
-      priceRange: body.priceRange || 'CONTACT',
-      priceMin,
-      priceMax,
-      pricingDetails: body.pricingDetails?.trim() || null,
-      ageGroups: Array.isArray(body.ageGroups) ? body.ageGroups : [],
-      capacity,
-      insuranceAccepted: body.insuranceAccepted === true || body.insuranceAccepted === 'true',
-      insuranceProviders: body.acceptedInsurances 
-        ? body.acceptedInsurances.split(',').map((i: string) => i.trim()).filter(Boolean)
-        : [],
+    // Parse optional event dates; invalid/empty -> null.
+    const parseDate = (v?: string) => {
+      if (!v || !v.trim()) return null;
+      const d = new Date(v);
+      return isNaN(d.getTime()) ? null : d;
     };
 
-    let service;
-    if (existingService) {
-      service = await prisma.service.update({
-        where: { id: existingService.id },
-        data: serviceData,
-      });
-    } else {
-      service = await prisma.service.create({
-        data: {
-          ...serviceData,
-          businessId: business.id,
-        },
-      });
-    }
+    const serviceData = {
+      name: `${data.businessName} Services`,
+      slug: data.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      description: orNull(data.description) || 'Professional services',
+      priceRange: data.priceRange,
+      priceMin: data.priceMin ?? null,
+      priceMax: data.priceMax ?? null,
+      pricingDetails: orNull(data.pricingDetails),
+      ageGroups: data.ageGroups,
+      capacity: data.capacity ?? null,
+      insuranceAccepted: data.insuranceAccepted,
+      insuranceProviders: data.acceptedInsurances
+        ? data.acceptedInsurances.split(',').map((i) => i.trim()).filter(Boolean)
+        : [],
+      // --- Category-expansion: listing kind, trust tier (inherited from the
+      // provider), and type-specific extension fields. ---
+      listingType: data.listingType,
+      // Denormalize the provider's verification tier onto the listing so search
+      // can filter/rank on it without a join. Admin tier changes re-sync this (P8).
+      verificationLevel: business.verificationLevel,
+      deliveryMode: data.deliveryMode ?? null,
+      condition: data.listingType === 'SHOP' ? data.condition ?? null : null,
+      isForRent: data.listingType === 'SHOP' ? data.isForRent : false,
+      brand: data.listingType === 'SHOP' ? orNull(data.brand) : null,
+      enrollmentStatus: data.listingType === 'SCHOOL' ? orNull(data.enrollmentStatus) : null,
+      programType: data.listingType === 'SCHOOL' ? orNull(data.programType) : null,
+      gradeLevels: data.listingType === 'SCHOOL' ? data.gradeLevels : [],
+      startDate: data.listingType === 'EVENT' ? parseDate(data.startDate) : null,
+      endDate: data.listingType === 'EVENT' ? parseDate(data.endDate) : null,
+      isVirtual: data.listingType === 'EVENT' ? data.isVirtual : false,
+    };
 
-    // Handle service types mapping
-    if (body.serviceTypes && body.serviceTypes.length > 0) {
-      // Delete existing mappings
-      await prisma.serviceTypeMap.deleteMany({
-        where: { serviceId: service.id },
-      });
+    const service = existingService
+      ? await prisma.service.update({ where: { id: existingService.id }, data: serviceData })
+      : await prisma.service.create({ data: { ...serviceData, businessId: business.id } });
 
-      // Create new mappings
-      for (const typeSlug of body.serviceTypes) {
-        const serviceType = await prisma.serviceType.findUnique({
-          where: { slug: typeSlug },
+    // Sync service-type mappings — batch the slug lookup + inserts instead of a query per checkbox
+    if (data.serviceTypes.length > 0) {
+      const types = await prisma.serviceType.findMany({
+        where: { slug: { in: data.serviceTypes } },
+        select: { id: true },
+      });
+      await prisma.serviceTypeMap.deleteMany({ where: { serviceId: service.id } });
+      if (types.length > 0) {
+        await prisma.serviceTypeMap.createMany({
+          data: types.map((t) => ({ serviceId: service.id, serviceTypeId: t.id })),
+          skipDuplicates: true,
         });
-
-        if (serviceType) {
-          await prisma.serviceTypeMap.create({
-            data: {
-              serviceId: service.id,
-              serviceTypeId: serviceType.id,
-            },
-          });
-        }
       }
     }
 
-    // Handle disabilities
-    if (body.disabilityTypes && body.disabilityTypes.length > 0) {
-      // Delete existing relationships
-      await prisma.businessDisability.deleteMany({
-        where: { businessId: business.id },
+    // Sync disability mappings — same batched approach
+    if (data.disabilityTypes.length > 0) {
+      const disabilities = await prisma.disability.findMany({
+        where: { slug: { in: data.disabilityTypes } },
+        select: { id: true },
       });
-
-      // Create new relationships
-      for (const disabilitySlug of body.disabilityTypes) {
-        const disability = await prisma.disability.findUnique({
-          where: { slug: disabilitySlug },
+      await prisma.businessDisability.deleteMany({ where: { businessId: business.id } });
+      if (disabilities.length > 0) {
+        await prisma.businessDisability.createMany({
+          data: disabilities.map((d) => ({ businessId: business.id, disabilityId: d.id })),
+          skipDuplicates: true,
         });
-
-        if (disability) {
-          await prisma.businessDisability.create({
-            data: {
-              businessId: business.id,
-              disabilityId: disability.id,
-            },
-          });
-        }
       }
     }
 
-    return NextResponse.json({ business: business, success: true });
+    return NextResponse.json({ business, success: true });
   } catch (error: any) {
     console.error('Update business error:', error);
-    
+
     if (error.name === 'ZodError') {
       return NextResponse.json(
         { error: 'Validation error', details: error.errors },

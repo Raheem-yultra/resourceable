@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { businessService } from '@/services/business.service';
+import { getAdminSession, logAdminAction } from '@/lib/admin';
+import { onBusinessApproved } from '@/lib/billing';
 import { z } from 'zod';
 
 const verifySchema = z.object({
@@ -15,8 +15,8 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    const session = await getAdminSession();
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -25,7 +25,7 @@ export async function PATCH(
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid request', details: validation.error },
+        { error: 'Invalid request', details: validation.error.flatten() },
         { status: 400 }
       );
     }
@@ -33,7 +33,7 @@ export async function PATCH(
     const { status, rejectionReason, adminNotes } = validation.data;
 
     // Require rejection reason when rejecting
-    if (status === 'REJECTED' && !rejectionReason) {
+    if (status === 'REJECTED' && !rejectionReason?.trim()) {
       return NextResponse.json(
         { error: 'Rejection reason is required' },
         { status: 400 }
@@ -50,13 +50,29 @@ export async function PATCH(
       }
     );
 
-    return NextResponse.json({ 
+    // Record who made this decision and why
+    await logAdminAction({
+      adminId: session.user.id,
+      action: status === 'APPROVED' ? 'BUSINESS_APPROVED' : 'BUSINESS_REJECTED',
+      targetType: 'Business',
+      targetId: business.id,
+      targetLabel: business.businessName,
+      reason: status === 'REJECTED' ? rejectionReason : undefined,
+    });
+
+    // On approval, kick off billing onboarding (create Stripe customer + email).
+    // Self-contained/best-effort — never blocks the approval response.
+    if (status === 'APPROVED') {
+      await onBusinessApproved(business.id);
+    }
+
+    return NextResponse.json({
       business,
-      message: `Business ${status.toLowerCase()} successfully` 
+      message: `Business ${status.toLowerCase()} successfully`
     });
   } catch (error: any) {
     console.error('Update verification status error:', error);
-    
+
     if (error.message === 'Business not found') {
       return NextResponse.json(
         { error: 'Business not found' },
@@ -70,4 +86,3 @@ export async function PATCH(
     );
   }
 }
-

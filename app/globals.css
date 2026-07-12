@@ -99,6 +99,24 @@
   .theme-danger {
     @apply rounded-lg border border-destructive/30 bg-destructive/10 text-foreground;
   }
+
+  /* Admin console: deliberately flat + dense, distinct from the public marketing look.
+     Covers the app's radial-gradient background with a solid muted surface. */
+  .admin-shell {
+    @apply relative min-h-screen;
+  }
+  .admin-shell::before {
+    content: '';
+    @apply pointer-events-none fixed inset-0 -z-10 bg-muted/60;
+    background-color: hsl(var(--muted));
+  }
+  .admin-wrap {
+    @apply container mx-auto max-w-7xl px-3 py-5 sm:px-6;
+  }
+  /* Inline form field error text — one consistent treatment across all forms */
+  .field-error {
+    @apply text-xs text-destructive mt-1;
+  }
 }
 
 /* Accessibility: Skip to main content link */

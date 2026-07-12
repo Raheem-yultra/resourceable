@@ -29,7 +29,11 @@ export default async function BusinessProfilePage() {
       },
       services: {
         include: {
-          serviceTypes: true,
+          serviceTypes: {
+            include: {
+              serviceType: true,
+            },
+          },
         },
       },
     },

@@ -10,6 +10,10 @@ function getResendClient(): Resend {
   return resend;
 }
 
+// Sender + support reply-to are env-configurable (were hardcoded to a personal Gmail before).
+const FROM_EMAIL = process.env.EMAIL_FROM || 'ResourceAble <onboarding@resend.dev>';
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@resourceable.com';
+
 // HTML escape function to prevent XSS in emails
 function escapeHtml(text: string): string {
   const map: Record<string, string> = {
@@ -69,9 +73,9 @@ export async function sendContactInquiryEmail({
     const safeMessage = escapeHtml(message);
     
     const { data, error } = await getResendClient().emails.send({
-      from: 'ResourceAble <onboarding@resend.dev>',
+      from: FROM_EMAIL,
       to: businessEmail,
-      replyTo: 'raheemrehman22005@gmail.com',
+      replyTo: SUPPORT_EMAIL,
       subject: `New Customer Inquiry - ${safeService}`,
       html: `
         <!DOCTYPE html>
@@ -219,9 +223,9 @@ export async function sendCustomerConfirmationEmail({
     const safeWebsite = businessWebsite ? escapeHtml(businessWebsite) : '';
     
     const { data, error } = await getResendClient().emails.send({
-      from: 'ResourceAble <onboarding@resend.dev>',
+      from: FROM_EMAIL,
       to: customerEmail,
-      replyTo: 'raheemrehman2005@gmail.com',
+      replyTo: SUPPORT_EMAIL,
       subject: `We've contacted ${safeBusiness} on your behalf`,
       html: `
         <!DOCTYPE html>
@@ -368,9 +372,9 @@ export async function sendPasswordResetEmail({
     const safeName = escapeHtml(name);
     
     const { data, error } = await getResendClient().emails.send({
-      from: 'ResourceAble <onboarding@resend.dev>',
+      from: FROM_EMAIL,
       to: email,
-      replyTo: 'raheemrehman22005@gmail.com',
+      replyTo: SUPPORT_EMAIL,
       subject: 'Reset Your Password - ResourceAble',
       html: `
         <!DOCTYPE html>
@@ -491,7 +495,7 @@ export async function sendVerificationEmail({
     const safeEmail = escapeHtml(email);
 
     const { data, error } = await getResendClient().emails.send({
-      from: 'ResourceAble <onboarding@resend.dev>',
+      from: FROM_EMAIL,
       to: email,
       subject: 'Verify your email - ResourceAble',
       html: `
@@ -590,4 +594,244 @@ Thank you for joining ResourceAble - Helping connect families with disability se
     console.error('Verification email failed:', error);
     throw error;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Admin action notifications (suspend / unsuspend / remove).
+// Centralized here so admin routes stop duplicating raw Resend calls + HTML.
+// ---------------------------------------------------------------------------
+
+interface AdminNotificationProps {
+  email: string;
+  name: string;
+  businessName: string;
+  reason?: string;
+}
+
+// Shared, minimal branded shell for admin notification emails
+function adminNotificationHtml(opts: {
+  accent: string;
+  emoji: string;
+  heading: string;
+  greeting: string;
+  bodyHtml: string;
+  reason?: string;
+}): string {
+  const reasonBlock = opts.reason
+    ? `<div style="background: white; padding: 20px; border-left: 4px solid ${opts.accent}; margin: 20px 0; border-radius: 4px;">
+         <h3 style="margin-top: 0; color: ${opts.accent};">Reason:</h3>
+         <p style="margin-bottom: 0; white-space: pre-wrap;">${escapeHtml(opts.reason)}</p>
+       </div>`
+    : '';
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: ${opts.accent}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin:0;">${opts.emoji} ${escapeHtml(opts.heading)}</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
+            <p>${escapeHtml(opts.greeting)}</p>
+            ${opts.bodyHtml}
+            ${reasonBlock}
+            <p>If you believe this was made in error or have questions, please contact our support team.</p>
+          </div>
+          <div style="text-align:center; margin-top: 20px; color:#6b7280; font-size:14px;">
+            <p>ResourceAble &copy; ${new Date().getFullYear()}</p>
+          </div>
+        </div>
+      </body>
+    </html>`;
+}
+
+export async function sendBusinessSuspendedEmail({ email, name, businessName, reason }: AdminNotificationProps) {
+  const safeBusiness = escapeHtml(businessName);
+  const { error } = await getResendClient().emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    replyTo: SUPPORT_EMAIL,
+    subject: 'Your ResourceAble Business Has Been Suspended',
+    html: adminNotificationHtml({
+      accent: '#f97316',
+      emoji: '⚠️',
+      heading: 'Business Suspended',
+      greeting: `Hello ${name || 'Business Owner'},`,
+      bodyHtml: `<p>Your business profile <strong>${safeBusiness}</strong> has been suspended. It is no longer visible on the platform and you cannot access your dashboard while suspended.</p>`,
+      reason,
+    }),
+  });
+  if (error) {
+    console.error('Resend suspension email error:', error);
+    throw new Error('Failed to send suspension email');
+  }
+  return { success: true };
+}
+
+export async function sendBusinessUnsuspendedEmail({ email, name, businessName }: AdminNotificationProps) {
+  const safeBusiness = escapeHtml(businessName);
+  const { error } = await getResendClient().emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    replyTo: SUPPORT_EMAIL,
+    subject: 'Your ResourceAble Business Has Been Reinstated',
+    html: adminNotificationHtml({
+      accent: '#0e7490',
+      emoji: '✅',
+      heading: 'Business Reinstated',
+      greeting: `Hello ${name || 'Business Owner'},`,
+      bodyHtml: `<p>Good news — your business profile <strong>${safeBusiness}</strong> has been reinstated and is visible on the platform again. You now have full access to your dashboard.</p>`,
+    }),
+  });
+  if (error) {
+    console.error('Resend reinstatement email error:', error);
+    throw new Error('Failed to send reinstatement email');
+  }
+  return { success: true };
+}
+
+export async function sendBusinessRemovedEmail({ email, name, businessName, reason }: AdminNotificationProps) {
+  const safeBusiness = escapeHtml(businessName);
+  const { error } = await getResendClient().emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    replyTo: SUPPORT_EMAIL,
+    subject: 'Your ResourceAble Business Has Been Removed',
+    html: adminNotificationHtml({
+      accent: '#dc2626',
+      emoji: '🚫',
+      heading: 'Business Removed',
+      greeting: `Hello ${name || 'Business Owner'},`,
+      bodyHtml: `<p>Your business profile <strong>${safeBusiness}</strong> and all associated service listings have been permanently removed from ResourceAble. This action cannot be undone.</p>`,
+      reason,
+    }),
+  });
+  if (error) {
+    console.error('Resend removal email error:', error);
+    throw new Error('Failed to send removal email');
+  }
+  return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// Billing notifications (approval → set up billing, trial ending, payment failed).
+// ---------------------------------------------------------------------------
+
+interface BillingEmailProps {
+  email: string;
+  name: string;
+  businessName: string;
+  actionUrl: string;
+  trialEndsAt?: Date | null;
+}
+
+function billingHtml(opts: {
+  accent: string;
+  emoji: string;
+  heading: string;
+  greeting: string;
+  bodyHtml: string;
+  ctaLabel: string;
+  ctaUrl: string;
+}): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: ${opts.accent}; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin:0;">${opts.emoji} ${escapeHtml(opts.heading)}</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
+            <p>${escapeHtml(opts.greeting)}</p>
+            ${opts.bodyHtml}
+            <div style="text-align:center; margin: 28px 0;">
+              <a href="${opts.ctaUrl}" style="display:inline-block; background:${opts.accent}; color:#fff; padding:12px 28px; text-decoration:none; border-radius:6px; font-weight:bold;">${escapeHtml(opts.ctaLabel)}</a>
+            </div>
+            <p style="font-size:12px; color:#6b7280;">If the button doesn't work, copy this link:<br><a href="${opts.ctaUrl}">${opts.ctaUrl}</a></p>
+          </div>
+          <div style="text-align:center; margin-top: 16px; color:#6b7280; font-size:14px;">
+            <p>ResourceAble &copy; ${new Date().getFullYear()}</p>
+          </div>
+        </div>
+      </body>
+    </html>`;
+}
+
+/** Sent when an admin approves a provider — prompts them to add a card and start the trial. */
+export async function sendProviderApprovedBillingEmail({ email, name, businessName, actionUrl }: BillingEmailProps) {
+  const safeBusiness = escapeHtml(businessName);
+  const { error } = await getResendClient().emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    replyTo: SUPPORT_EMAIL,
+    subject: `${businessName} is approved — start your 30-day free trial`,
+    html: billingHtml({
+      accent: '#0e7490',
+      emoji: '🎉',
+      heading: "You're Approved!",
+      greeting: `Hello ${name || 'Business Owner'},`,
+      bodyHtml: `<p><strong>${safeBusiness}</strong> has been approved on ResourceAble. To go live, add a payment method to start your <strong>30-day free trial</strong>. You won't be charged until the trial ends, and you can cancel anytime.</p>`,
+      ctaLabel: 'Set Up Billing & Start Trial',
+      ctaUrl: actionUrl,
+    }),
+  });
+  if (error) {
+    console.error('Resend approval-billing email error:', error);
+    throw new Error('Failed to send approval email');
+  }
+  return { success: true };
+}
+
+/** Sent ~3 days before the trial ends (Stripe trial_will_end). Does not change status. */
+export async function sendTrialEndingEmail({ email, name, businessName, actionUrl, trialEndsAt }: BillingEmailProps) {
+  const safeBusiness = escapeHtml(businessName);
+  const when = trialEndsAt ? escapeHtml(trialEndsAt.toLocaleDateString()) : 'soon';
+  const { error } = await getResendClient().emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    replyTo: SUPPORT_EMAIL,
+    subject: 'Your ResourceAble free trial is ending soon',
+    html: billingHtml({
+      accent: '#f97316',
+      emoji: '⏳',
+      heading: 'Trial Ending Soon',
+      greeting: `Hello ${name || 'Business Owner'},`,
+      bodyHtml: `<p>Your free trial for <strong>${safeBusiness}</strong> ends on <strong>${when}</strong>. Your subscription will begin automatically using the card on file — no action needed to keep your listing live. To review or update your payment method, use the button below.</p>`,
+      ctaLabel: 'Manage Billing',
+      ctaUrl: actionUrl,
+    }),
+  });
+  if (error) {
+    console.error('Resend trial-ending email error:', error);
+    throw new Error('Failed to send trial-ending email');
+  }
+  return { success: true };
+}
+
+/** Sent on invoice.payment_failed — provider goes past_due and needs to fix their card. */
+export async function sendPaymentFailedEmail({ email, name, businessName, actionUrl }: BillingEmailProps) {
+  const safeBusiness = escapeHtml(businessName);
+  const { error } = await getResendClient().emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    replyTo: SUPPORT_EMAIL,
+    subject: 'Action needed: payment failed for your ResourceAble subscription',
+    html: billingHtml({
+      accent: '#dc2626',
+      emoji: '⚠️',
+      heading: 'Payment Failed',
+      greeting: `Hello ${name || 'Business Owner'},`,
+      bodyHtml: `<p>We couldn't process the payment for <strong>${safeBusiness}</strong>. Your listing is still visible for now, but please update your payment method to avoid interruption. We'll retry automatically, and if all retries fail your listing will be suspended.</p>`,
+      ctaLabel: 'Update Payment Method',
+      ctaUrl: actionUrl,
+    }),
+  });
+  if (error) {
+    console.error('Resend payment-failed email error:', error);
+    throw new Error('Failed to send payment-failed email');
+  }
+  return { success: true };
 }

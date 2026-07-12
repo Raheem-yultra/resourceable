@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { billingVisibleFilter } from '@/lib/billing';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,11 @@ const searchParamsSchema = z.object({
   priceMax: z.number().min(0).max(100000).optional(),
   priceRange: z.enum(['FREE', 'LOW', 'MEDIUM', 'HIGH', 'PREMIUM', 'CONTACT']).optional(),
   ageGroup: z.enum(['INFANT', 'TODDLER', 'CHILD', 'TEEN', 'ADULT', 'ALL_AGES']).optional(),
+  // Category-expansion: restrict to one bookable listing type (browse tabs).
+  // Omitted = unified "All" search across every type (plan §5 / §7.1).
+  listingType: z.enum(['SERVICE', 'THERAPY', 'SHOP', 'SCHOOL', 'EVENT']).optional(),
+  // Only show listings from BASIC_VERIFIED / LICENSED providers.
+  verifiedOnly: z.boolean().optional(),
   insuranceAccepted: z.boolean().optional(),
   isAvailable: z.boolean().optional(),
   minRating: z.number().min(1).max(5).optional(),
@@ -53,8 +59,10 @@ export async function GET(req: NextRequest) {
     const serviceTypeIds = searchParams.getAll('serviceTypeId');
     const insuranceAcceptedParam = searchParams.get('insuranceAccepted');
     const isAvailableParam = searchParams.get('isAvailable');
+    const verifiedOnlyParam = searchParams.get('verifiedOnly');
+    const listingTypeParam = searchParams.get('listingType');
     const sortByParam = searchParams.get('sortBy');
-    
+
     const paramsResult = searchParamsSchema.safeParse({
       query: searchParams.get('query') || undefined,
       zipCode: searchParams.get('zipCode') || undefined,
@@ -66,6 +74,8 @@ export async function GET(req: NextRequest) {
       priceMax: searchParams.get('priceMax') ? parseFloat(searchParams.get('priceMax')!) : undefined,
       priceRange: (searchParams.get('priceRange') as 'FREE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'PREMIUM' | 'CONTACT' | undefined) || undefined,
       ageGroup: (searchParams.get('ageGroup') as 'INFANT' | 'TODDLER' | 'CHILD' | 'TEEN' | 'ADULT' | 'ALL_AGES' | undefined) || undefined,
+      listingType: (listingTypeParam as 'SERVICE' | 'THERAPY' | 'SHOP' | 'SCHOOL' | 'EVENT' | undefined) || undefined,
+      verifiedOnly: verifiedOnlyParam === null ? undefined : verifiedOnlyParam === 'true',
       insuranceAccepted: insuranceAcceptedParam === null ? undefined : insuranceAcceptedParam === 'true',
       isAvailable: isAvailableParam === null ? undefined : isAvailableParam === 'true',
       minRating: searchParams.get('minRating') ? parseFloat(searchParams.get('minRating')!) : undefined,
@@ -117,6 +127,8 @@ async function searchServices(params: SearchParams, userId?: string) {
     business: {
       isActive: true,
       verificationStatus: 'APPROVED',
+      // Hide providers whose billing has lapsed (suspended/canceled).
+      ...billingVisibleFilter,
     },
   };
 
@@ -200,6 +212,16 @@ async function searchServices(params: SearchParams, userId?: string) {
     };
   }
 
+  // Listing-type filter (browse tabs). Omitted = unified search across all types.
+  if (params.listingType) {
+    where.listingType = params.listingType;
+  }
+
+  // Verified-only filter — providers confirmed at BASIC_VERIFIED or LICENSED.
+  if (params.verifiedOnly) {
+    where.verificationLevel = { in: ['BASIC_VERIFIED', 'LICENSED'] };
+  }
+
   // Insurance filter
   if (params.insuranceAccepted) {
     where.insuranceAccepted = true;
@@ -215,9 +237,12 @@ async function searchServices(params: SearchParams, userId?: string) {
   // Build order by clause
   const orderBy = getOrderBy(sortBy);
 
-  // Execute query with relations
+  // Execute query with relations. `relationLoadStrategy: 'join'` collapses the
+  // main query + every relation into ONE round-trip (LATERAL join) — critical on
+  // a remote pooled connection where each extra query adds latency.
   const [services, total] = await Promise.all([
     prisma.service.findMany({
+      relationLoadStrategy: 'join',
       where,
       include: {
         business: {
@@ -288,6 +313,26 @@ async function searchServices(params: SearchParams, userId?: string) {
     duration: service.duration,
     frequency: service.frequency,
     isAvailable: service.isAvailable,
+    // Category-expansion: listing kind, trust tier, and type-specific fields the
+    // card uses to render its badge + secondary info line (plan §7.5).
+    listingType: service.listingType,
+    verificationLevel: service.verificationLevel,
+    deliveryMode: service.deliveryMode,
+    condition: service.condition,
+    isForRent: service.isForRent,
+    brand: service.brand,
+    images: service.images,
+    enrollmentStatus: service.enrollmentStatus,
+    gradeLevels: service.gradeLevels,
+    programType: service.programType,
+    isVirtual: service.isVirtual,
+    rsvpCount: service.rsvpCount,
+    capacity: service.capacity,
+    startDate: service.startDate,
+    endDate: service.endDate,
+    // Per-listing rating (multi-listing marketplace) — each listing reviewed on its own.
+    averageRating: service.averageRating,
+    totalReviews: service.totalReviews,
     business: service.business,
     disabilities: service.serviceDisabilities.map((sd: any) => sd.disability),
     serviceTypes: service.serviceTypes.map((st: any) => st.serviceType),
@@ -310,17 +355,25 @@ async function searchServices(params: SearchParams, userId?: string) {
 }
 
 // Helper: Get order by clause
+// `relevance` weights provider trust (verification tier) alongside rating so a
+// trusted provider isn't outranked purely on recency/proximity (plan §4).
+// Enum order is UNVERIFIED < BASIC_VERIFIED < LICENSED, so `desc` surfaces
+// LICENSED first.
 function getOrderBy(sortBy: SearchParams['sortBy']) {
   switch (sortBy) {
     case 'rating':
-      return { business: { averageRating: 'desc' as const } };
+      return [{ business: { averageRating: 'desc' as const } }, { verificationLevel: 'desc' as const }];
     case 'newest':
       return { createdAt: 'desc' as const };
     case 'price':
       return { priceMin: 'asc' as const };
     case 'relevance':
     default:
-      return { createdAt: 'desc' as const };
+      return [
+        { verificationLevel: 'desc' as const },
+        { business: { averageRating: 'desc' as const } },
+        { createdAt: 'desc' as const },
+      ];
   }
 }
 
@@ -334,6 +387,8 @@ function getAppliedFilters(params: SearchParams) {
   if (params.state) applied.push('state');
   if (params.disabilityIds?.length) applied.push('disability');
   if (params.serviceTypeIds?.length) applied.push('serviceType');
+  if (params.listingType) applied.push('listingType');
+  if (params.verifiedOnly) applied.push('verified');
   if (params.priceRange) applied.push('priceRange');
   if (params.ageGroup) applied.push('ageGroup');
   if (params.insuranceAccepted) applied.push('insurance');

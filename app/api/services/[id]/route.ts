@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceService } from '@/services/service.service';
-import { serviceSchema } from '@/lib/validations';
+import { listingSchema } from '@/lib/validations';
 
 export async function GET(
   req: NextRequest,
@@ -46,20 +46,13 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const validatedData = serviceSchema.partial().parse(body);
+    const validatedData = listingSchema.parse(body);
 
-    const updatedService = await serviceService.updateService(params.id, {
-      name: validatedData.name,
-      description: validatedData.description,
-      ageGroups: validatedData.ageGroups as any,
-      ageMin: validatedData.ageMin,
-      ageMax: validatedData.ageMax,
-      priceRange: validatedData.priceRange as any,
-      priceMin: validatedData.priceMin,
-      priceMax: validatedData.priceMax,
-      insuranceAccepted: validatedData.insuranceAccepted,
-      isAvailable: validatedData.isAvailable,
-    });
+    const updatedService = await serviceService.updateListing(
+      params.id,
+      service.business.id,
+      validatedData
+    );
 
     return NextResponse.json({ service: updatedService });
   } catch (error: any) {

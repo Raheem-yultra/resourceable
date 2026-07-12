@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceService } from '@/services/service.service';
 import { businessService } from '@/services/business.service';
-import { serviceSchema } from '@/lib/validations';
+import { listingSchema } from '@/lib/validations';
+import { isBillingBlocked } from '@/lib/billing';
 
 export async function GET(req: NextRequest) {
   try {
@@ -40,21 +41,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Business not found' }, { status: 404 });
     }
 
-    const body = await req.json();
-    const validatedData = serviceSchema.parse(body);
+    // Block listing creation when billing has lapsed (suspended/canceled).
+    if (isBillingBlocked(business.subscriptionStatus)) {
+      return NextResponse.json(
+        { error: 'Your subscription is inactive. Reactivate billing to manage listings.', code: 'BILLING_INACTIVE' },
+        { status: 403 }
+      );
+    }
 
-    const service = await serviceService.createService(business.id, {
-      name: validatedData.name,
-      description: validatedData.description,
-      ageGroups: validatedData.ageGroups as any,
-      ageMin: validatedData.ageMin,
-      ageMax: validatedData.ageMax,
-      priceRange: validatedData.priceRange as any,
-      priceMin: validatedData.priceMin,
-      priceMax: validatedData.priceMax,
-      insuranceAccepted: validatedData.insuranceAccepted,
-      isAvailable: validatedData.isAvailable,
-    });
+    const body = await req.json();
+    const validatedData = listingSchema.parse(body);
+
+    const service = await serviceService.createListing(business.id, validatedData);
 
     return NextResponse.json({ service }, { status: 201 });
   } catch (error: any) {

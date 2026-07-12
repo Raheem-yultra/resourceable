@@ -31,6 +31,7 @@ export const userService = {
 
   async getUserByEmail(email: string) {
     return prisma.user.findUnique({
+      relationLoadStrategy: 'join',
       where: { email },
       include: {
         business: true,
@@ -40,6 +41,7 @@ export const userService = {
 
   async getUserById(id: string) {
     return prisma.user.findUnique({
+      relationLoadStrategy: 'join',
       where: { id },
       include: {
         business: true,

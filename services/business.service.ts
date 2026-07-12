@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma';
-import { VerificationStatus } from '@prisma/client';
+import { VerificationStatus, Prisma } from '@prisma/client';
+
+export interface AdminBusinessFilters {
+  search?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+}
 
 export const businessService = {
   async createBusiness(userId: string, data: {
@@ -26,6 +32,7 @@ export const businessService = {
 
   async getBusinessById(id: string) {
     return prisma.business.findUnique({
+      relationLoadStrategy: 'join',
       where: { id },
       include: {
         user: {
@@ -42,6 +49,7 @@ export const businessService = {
 
   async getBusinessByUserId(userId: string) {
     return prisma.business.findUnique({
+      relationLoadStrategy: 'join',
       where: { userId },
       include: {
         services: true,
@@ -97,11 +105,27 @@ export const businessService = {
     });
   },
 
-  async getBusinessesByStatus(status: VerificationStatus) {
+  // Build a shared admin where-clause from optional search / date-range filters
+  buildAdminFilter(base: Prisma.BusinessWhereInput, filters?: AdminBusinessFilters): Prisma.BusinessWhereInput {
+    const where: Prisma.BusinessWhereInput = { ...base };
+    if (filters?.search) {
+      where.OR = [
+        { businessName: { contains: filters.search, mode: 'insensitive' } },
+        { city: { contains: filters.search, mode: 'insensitive' } },
+        { user: { email: { contains: filters.search, mode: 'insensitive' } } },
+      ];
+    }
+    if (filters?.dateFrom || filters?.dateTo) {
+      where.createdAt = {};
+      if (filters.dateFrom) where.createdAt.gte = filters.dateFrom;
+      if (filters.dateTo) where.createdAt.lte = filters.dateTo;
+    }
+    return where;
+  },
+
+  async getBusinessesByStatus(status: VerificationStatus, filters?: AdminBusinessFilters) {
     return prisma.business.findMany({
-      where: {
-        verificationStatus: status,
-      },
+      where: this.buildAdminFilter({ verificationStatus: status }, filters),
       select: {
         id: true,
         businessName: true,
@@ -118,6 +142,9 @@ export const businessService = {
         yearEstablished: true,
         licenseNumber: true,
         verificationStatus: true,
+        isSuspended: true,
+        suspendedAt: true,
+        suspensionReason: true,
         createdAt: true,
         verifiedAt: true,
         rejectionReason: true,
@@ -162,6 +189,7 @@ export const businessService = {
     verificationStatus?: VerificationStatus;
   }) {
     return prisma.business.findMany({
+      relationLoadStrategy: 'join',
       where: filters,
       include: {
         user: {

@@ -8,6 +8,29 @@ import { cn } from '@/lib/utils';
 import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
 import { useScroll } from '@/hooks/use-scroll';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+// Marketplace nav (plan §5). "Browse" groups the three provider/product-finding
+// flows (Services, Therapies, Shop) that users naturally bounce between; School,
+// Events, and Resources stay top-level as conceptually distinct destinations.
+const BROWSE_LINKS = [
+  { label: 'All listings', href: '/browse' },
+  { label: 'Services', href: '/browse/services' },
+  { label: 'Therapies', href: '/browse/therapies' },
+  { label: 'Shop', href: '/browse/shop' },
+];
+const TOP_LEVEL_MARKETPLACE = [
+  { label: 'School', href: '/browse/school' },
+  { label: 'Events', href: '/browse/events' },
+  { label: 'Resources', href: '/resources' },
+];
 
 export function Header() {
 	const [open, setOpen] = React.useState(false);
@@ -20,12 +43,13 @@ export function Header() {
 		? (session.user.role === 'BUSINESS' ? '/business/dashboard' : '/search')
 		: '/';
 
-	// Define navigation links based on user role
+	// Define navigation links based on user role. Guests and families (USER) also
+	// get the marketplace nav (Browse ▾ / School / Events / Resources) rendered
+	// separately; ADMIN/BUSINESS keep their dashboards.
 	const getLinks = () => {
 		if (!session) {
 			// Not logged in - show public links
 			return [
-				{ label: 'Search Services', href: '/search' },
 				{ label: 'About', href: pathname === '/' ? '#about' : '/#about' },
 			];
 		}
@@ -43,6 +67,7 @@ export function Header() {
 			// Business user
 			return [
 				{ label: 'Dashboard', href: '/business/dashboard' },
+				{ label: 'Listings', href: '/business/listings' },
 				{ label: 'Profile', href: '/business/profile' },
 				{ label: 'Messages', href: '/messages' },
 			];
@@ -50,12 +75,13 @@ export function Header() {
 
 		// Regular user
 		return [
-			{ label: 'Search Services', href: '/search' },
 			{ label: 'Messages', href: '/messages' },
 		];
 	};
 
 	const links = getLinks();
+	// Show the marketplace browse nav for guests and families (not providers/admins).
+	const showMarketplace = !session || session.user.role === 'USER';
 	const isActiveLink = (href: string) => {
 		if (href.startsWith('#')) {
 			return pathname === '/';
@@ -125,6 +151,36 @@ export function Header() {
 				</Link>
 				<div className="hidden items-center gap-2 md:flex">
 					<ThemeToggle />
+					{showMarketplace && (
+						<>
+							<DropdownMenu>
+								<DropdownMenuTrigger className={cn(buttonVariants({ variant: 'ghost' }), 'gap-1')}>
+									Browse
+									<ChevronDown className="h-4 w-4" aria-hidden="true" />
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="start" className="w-44">
+									{BROWSE_LINKS.map((link, i) => (
+										<div key={link.href}>
+											<DropdownMenuItem asChild>
+												<Link href={link.href}>{link.label}</Link>
+											</DropdownMenuItem>
+											{i === 0 && <DropdownMenuSeparator />}
+										</div>
+									))}
+								</DropdownMenuContent>
+							</DropdownMenu>
+							{TOP_LEVEL_MARKETPLACE.map((link) => (
+								<Link
+									key={link.href}
+									className={buttonVariants({ variant: 'ghost' })}
+									href={link.href}
+									aria-current={isActiveLink(link.href) ? 'page' : undefined}
+								>
+									{link.label}
+								</Link>
+							))}
+						</>
+					)}
 					{links.map((link, i) => (
 						<Link
 							key={i}
@@ -180,6 +236,21 @@ export function Header() {
 					)}
 				>
 					<div className="grid gap-y-2">
+						{showMarketplace &&
+							[...BROWSE_LINKS, ...TOP_LEVEL_MARKETPLACE].map((link) => (
+								<Link
+									key={link.href}
+									className={buttonVariants({
+										variant: 'ghost',
+										className: 'justify-start',
+									})}
+									href={link.href}
+									onClick={() => setOpen(false)}
+									aria-current={isActiveLink(link.href) ? 'page' : undefined}
+								>
+									{link.label}
+								</Link>
+							))}
 						{links.map((link) => (
 							<Link
 								key={link.label}

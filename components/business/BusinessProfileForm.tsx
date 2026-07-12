@@ -1,51 +1,58 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, MapPin, Phone, Mail, Globe, Clock, DollarSign, Users, CheckCircle } from 'lucide-react';
+import {
+  Building2, MapPin, Phone, Mail, Globe, Clock, DollarSign, Users, CheckCircle,
+  Tag, Stethoscope, HeartHandshake, ShoppingBag, GraduationCap, CalendarDays,
+} from 'lucide-react';
+import { LISTING_TYPES, type BookableListingType } from '@/lib/listing-taxonomy';
 
-const DISABILITY_TYPES = [
-  { value: 'AUTISM', label: 'Autism Spectrum Disorder' },
-  { value: 'DOWN_SYNDROME', label: 'Down Syndrome' },
-  { value: 'ADHD', label: 'ADHD' },
-  { value: 'CEREBRAL_PALSY', label: 'Cerebral Palsy' },
-  { value: 'INTELLECTUAL_DISABILITY', label: 'Intellectual Disability' },
-  { value: 'LEARNING_DISABILITY', label: 'Learning Disability' },
-  { value: 'DEVELOPMENTAL_DELAY', label: 'Developmental Delay' },
-  { value: 'PHYSICAL_DISABILITY', label: 'Physical Disability' },
-  { value: 'SENSORY_DISABILITY', label: 'Sensory Disability (Visual/Hearing)' },
-  { value: 'SPEECH_LANGUAGE', label: 'Speech & Language Disorders' },
-  { value: 'OTHER', label: 'Other Disabilities' },
+const LISTING_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  Stethoscope, HeartHandshake, ShoppingBag, GraduationCap, CalendarDays,
+};
+const CONDITIONS = [
+  { value: 'NEW', label: 'New' },
+  { value: 'USED_LIKE_NEW', label: 'Used — like new' },
+  { value: 'USED_FAIR', label: 'Used — fair' },
+];
+const DELIVERY_MODES = [
+  { value: 'IN_PERSON', label: 'In-person' },
+  { value: 'VIRTUAL', label: 'Virtual' },
+  { value: 'BOTH', label: 'In-person or virtual' },
 ];
 
-const SERVICE_TYPES = [
-  { value: 'THERAPY', label: 'Therapy Services', description: 'Speech, Physical, Occupational' },
-  { value: 'EDUCATION', label: 'Educational Programs', description: 'Special education, tutoring' },
-  { value: 'RESIDENTIAL', label: 'Residential Care', description: 'Group homes, assisted living' },
-  { value: 'DAY_PROGRAM', label: 'Day Programs', description: 'Day habilitation, adult day care' },
-  { value: 'RESPITE_CARE', label: 'Respite Care', description: 'Short-term relief care' },
-  { value: 'MEDICAL', label: 'Medical Services', description: 'Healthcare, nursing' },
-  { value: 'RECREATIONAL', label: 'Recreation & Sports', description: 'Adaptive sports, camps' },
-  { value: 'VOCATIONAL', label: 'Vocational Training', description: 'Job training, employment support' },
-  { value: 'COUNSELING', label: 'Counseling & Mental Health', description: 'Therapy, support' },
-  { value: 'SUPPORT_GROUP', label: 'Support Groups', description: 'Peer support, family groups' },
-  { value: 'TRANSPORTATION', label: 'Transportation Services', description: 'Medical transport, school bus' },
-  { value: 'OTHER', label: 'Other Services', description: 'Additional specialized services' },
-];
-
+// Age groups mirror the Prisma AgeGroup enum exactly (values MUST match the enum, not just labels)
 const AGE_GROUPS = [
   { value: 'INFANT', label: 'Infant (0-2 years)' },
   { value: 'TODDLER', label: 'Toddler (2-5 years)' },
   { value: 'CHILD', label: 'Child (5-12 years)' },
-  { value: 'TEEN', label: 'Teen (13-17 years)' },
+  { value: 'TEEN', label: 'Teen (12-18 years)' },
   { value: 'ADULT', label: 'Adult (18+ years)' },
-  { value: 'SENIOR', label: 'Senior (65+ years)' },
+  { value: 'ALL_AGES', label: 'All Ages' },
 ];
+
+// Price range values mirror the Prisma PriceRange enum exactly
+const PRICE_RANGES = [
+  { value: 'FREE', label: 'Free' },
+  { value: 'LOW', label: '$ - Budget Friendly (Under $50/session)' },
+  { value: 'MEDIUM', label: '$$ - Moderate ($50-$150/session)' },
+  { value: 'HIGH', label: '$$$ - Higher ($150-$300/session)' },
+  { value: 'PREMIUM', label: '$$$$ - Premium ($300+/session)' },
+  { value: 'CONTACT', label: 'Contact for Pricing' },
+];
+
+interface FilterOption {
+  id: string;
+  name: string;
+  slug: string;
+  category?: string;
+}
 
 interface BusinessProfileFormProps {
   business: any;
@@ -57,6 +64,28 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
+  // Disability & service-type options come from the DB so their slugs match what the API expects
+  const [availableDisabilities, setAvailableDisabilities] = useState<FilterOption[]>([]);
+  const [availableServiceTypes, setAvailableServiceTypes] = useState<FilterOption[]>([]);
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const [dRes, sRes] = await Promise.all([
+          fetch('/api/disabilities'),
+          fetch('/api/service-types'),
+        ]);
+        if (dRes.ok) setAvailableDisabilities((await dRes.json()).disabilities || []);
+        if (sRes.ok) setAvailableServiceTypes((await sRes.json()).serviceTypes || []);
+      } catch (err) {
+        console.error('Failed to load disability/service-type options:', err);
+      }
+    };
+    loadOptions();
+  }, []);
 
   const [formData, setFormData] = useState({
     // Basic Info
@@ -78,8 +107,8 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
     yearEstablished: business?.yearEstablished || '',
     licenseNumber: business?.licenseNumber || '',
     
-    // Services & Disabilities
-    serviceTypes: business?.services?.[0]?.serviceTypes?.map((st: any) => st.slug) || [],
+    // Services & Disabilities — bind to DB slugs so selections round-trip correctly
+    serviceTypes: business?.services?.[0]?.serviceTypes?.map((st: any) => st.serviceType?.slug).filter(Boolean) || [],
     disabilityTypes: business?.businessDisabilities?.map((bd: any) => bd.disability.slug) || [],
     ageGroups: business?.services?.[0]?.ageGroups || [],
     
@@ -97,14 +126,74 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
     // Insurance & Payment
     insuranceAccepted: business?.services?.[0]?.insuranceAccepted || false,
     acceptedInsurances: business?.services?.[0]?.acceptedInsurances || '',
-    
+
     // Hours
     hoursOfOperation: business?.hoursOfOperation || '',
+
+    // Category-expansion: listing kind + type-specific fields
+    listingType: (business?.services?.[0]?.listingType || 'SERVICE') as BookableListingType,
+    deliveryMode: business?.services?.[0]?.deliveryMode || '',
+    condition: business?.services?.[0]?.condition || '',
+    isForRent: business?.services?.[0]?.isForRent || false,
+    brand: business?.services?.[0]?.brand || '',
+    enrollmentStatus: business?.services?.[0]?.enrollmentStatus || '',
+    programType: business?.services?.[0]?.programType || '',
+    gradeLevels: business?.services?.[0]?.gradeLevels || [],
+    startDate: business?.services?.[0]?.startDate ? String(business.services[0].startDate).slice(0, 10) : '',
+    endDate: business?.services?.[0]?.endDate ? String(business.services[0].endDate).slice(0, 10) : '',
+    isVirtual: business?.services?.[0]?.isVirtual || false,
   });
+
+  // Only show subcategories that belong to the chosen listing type (plan §7.7);
+  // legacy untyped service types stay available under every type.
+  const visibleServiceTypes = availableServiceTypes.filter(
+    (t: any) => !t.listingType || t.listingType === formData.listingType
+  );
+  const activeTypeMeta = LISTING_TYPES.find((t) => t.type === formData.listingType);
+
+  // Client-side validation mirrors the server zod schema so users get inline feedback
+  // per field instead of a single toast after a failed round-trip.
+  const validate = (data: typeof formData): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!data.businessName.trim() || data.businessName.trim().length < 2) errs.businessName = 'Business name is required (min 2 characters)';
+    if (!data.description.trim() || data.description.trim().length < 10) errs.description = 'Description is required (min 10 characters)';
+    if (!data.phone.trim()) errs.phone = 'Phone number is required';
+    if (!data.email.trim()) errs.email = 'Email is required';
+    else if (!emailRe.test(data.email)) errs.email = 'Enter a valid email address';
+    if (data.website && !/^https?:\/\//i.test(data.website)) errs.website = 'Website must start with http:// or https://';
+    if (!data.address.trim()) errs.address = 'Street address is required';
+    if (!data.city.trim()) errs.city = 'City is required';
+    if (!data.state.trim()) errs.state = 'State is required';
+    if (!data.zipCode.trim()) errs.zipCode = 'ZIP code is required';
+    if (data.serviceTypes.length === 0) errs.serviceTypes = 'Select at least one service type';
+    if (data.disabilityTypes.length === 0) errs.disabilityTypes = 'Select at least one disability served';
+    if (data.ageGroups.length === 0) errs.ageGroups = 'Select at least one age group';
+    const min = parseFloat(data.priceMin);
+    const max = parseFloat(data.priceMax);
+    if (data.priceMin && data.priceMax && !isNaN(min) && !isNaN(max) && min > max) errs.priceMin = 'Minimum price cannot exceed maximum';
+    return errs;
+  };
+
+  // Once the user has attempted submit, keep errors live as they fix each field
+  useEffect(() => {
+    if (hasSubmitted) setFieldErrors(validate(formData));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, hasSubmitted]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setHasSubmitted(true);
+
+    const errs = validate(formData);
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setError('Please fix the highlighted fields before submitting.');
+      document.getElementById(Object.keys(errs)[0])?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -141,7 +230,7 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8" noValidate>
       {/* Success Message */}
       {success && (
         <div className="theme-success p-4 flex items-center gap-2">
@@ -152,7 +241,7 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
 
       {/* Error Message */}
       {error && (
-        <div className="theme-danger p-4">
+        <div className="theme-danger p-4" role="alert">
           {error}
         </div>
       )}
@@ -174,8 +263,11 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
                 id="businessName"
                 value={formData.businessName}
                 onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                aria-invalid={!!fieldErrors.businessName}
+                className={fieldErrors.businessName ? 'border-destructive' : ''}
                 required
               />
+              {fieldErrors.businessName && <p className="field-error" role="alert">{fieldErrors.businessName}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="businessType">Business Type</Label>
@@ -196,11 +288,17 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
               placeholder="Describe your services, approach, and what makes your business unique..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              aria-invalid={!!fieldErrors.description}
+              className={fieldErrors.description ? 'border-destructive' : ''}
               required
             />
-            <p className="text-xs text-muted-foreground">
-              This will be the main description customers see. Be detailed and welcoming.
-            </p>
+            {fieldErrors.description ? (
+              <p className="field-error" role="alert">{fieldErrors.description}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                This will be the main description customers see. Be detailed and welcoming.
+              </p>
+            )}
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
@@ -246,12 +344,14 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
                   id="phone"
                   type="tel"
                   placeholder="(555) 123-4567"
-                  className="pl-10"
+                  className={`pl-10 ${fieldErrors.phone ? 'border-destructive' : ''}`}
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  aria-invalid={!!fieldErrors.phone}
                   required
                 />
               </div>
+              {fieldErrors.phone && <p className="field-error" role="alert">{fieldErrors.phone}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email Address *</Label>
@@ -261,12 +361,14 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
                   id="email"
                   type="email"
                   placeholder="contact@business.com"
-                  className="pl-10"
+                  className={`pl-10 ${fieldErrors.email ? 'border-destructive' : ''}`}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  aria-invalid={!!fieldErrors.email}
                   required
                 />
               </div>
+              {fieldErrors.email && <p className="field-error" role="alert">{fieldErrors.email}</p>}
             </div>
           </div>
           <div className="space-y-2">
@@ -277,11 +379,13 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
                 id="website"
                 type="url"
                 placeholder="https://www.yourbusiness.com"
-                className="pl-10"
+                className={`pl-10 ${fieldErrors.website ? 'border-destructive' : ''}`}
                 value={formData.website}
                 onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                aria-invalid={!!fieldErrors.website}
               />
             </div>
+            {fieldErrors.website && <p className="field-error" role="alert">{fieldErrors.website}</p>}
           </div>
         </CardContent>
       </Card>
@@ -303,8 +407,11 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
               placeholder="123 Main Street"
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              aria-invalid={!!fieldErrors.address}
+              className={fieldErrors.address ? 'border-destructive' : ''}
               required
             />
+            {fieldErrors.address && <p className="field-error" role="alert">{fieldErrors.address}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="addressLine2">Address Line 2</Label>
@@ -322,8 +429,11 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
                 id="city"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                aria-invalid={!!fieldErrors.city}
+                className={fieldErrors.city ? 'border-destructive' : ''}
                 required
               />
+              {fieldErrors.city && <p className="field-error" role="alert">{fieldErrors.city}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="state">State *</Label>
@@ -333,8 +443,11 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
                 maxLength={2}
                 value={formData.state}
                 onChange={(e) => setFormData({ ...formData, state: e.target.value.toUpperCase() })}
+                aria-invalid={!!fieldErrors.state}
+                className={fieldErrors.state ? 'border-destructive' : ''}
                 required
               />
+              {fieldErrors.state && <p className="field-error" role="alert">{fieldErrors.state}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="zipCode">ZIP Code *</Label>
@@ -344,9 +457,52 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
                 maxLength={5}
                 value={formData.zipCode}
                 onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                aria-invalid={!!fieldErrors.zipCode}
+                className={fieldErrors.zipCode ? 'border-destructive' : ''}
                 required
               />
+              {fieldErrors.zipCode && <p className="field-error" role="alert">{fieldErrors.zipCode}</p>}
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Listing type — "What do you offer?" (plan §7.7) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Tag className="h-5 w-5" />
+            What do you offer?
+          </CardTitle>
+          <CardDescription>
+            Pick the category that best fits your listing. This determines how you appear in browse and which details we ask for.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3" role="radiogroup" aria-label="Listing type">
+            {LISTING_TYPES.map((t) => {
+              const Icon = LISTING_TYPE_ICONS[t.icon] || Tag;
+              const selected = formData.listingType === t.type;
+              return (
+                <button
+                  type="button"
+                  key={t.type}
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() =>
+                    // Switching type clears subcategory picks so we never persist
+                    // cross-type mappings (e.g. a Shop item tagged "Speech Therapy").
+                    setFormData({ ...formData, listingType: t.type, serviceTypes: [] })
+                  }
+                  className={`flex flex-col items-center gap-2 rounded-lg border p-4 text-center transition-colors min-h-[88px] ${
+                    selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-accent'
+                  }`}
+                >
+                  <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
+                  <span className="text-sm font-medium">{t.label}</span>
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -356,65 +512,80 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Services & Specializations
+            {activeTypeMeta ? `${activeTypeMeta.label} — categories` : 'Services & Specializations'}
           </CardTitle>
-          <CardDescription>What services do you provide?</CardDescription>
+          <CardDescription>Which subcategories apply?</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3">
-            <Label>Service Types * (Select all that apply)</Label>
-            <div className="grid md:grid-cols-2 gap-3">
-              {SERVICE_TYPES.map((type) => (
-                <label
-                  key={type.value}
-                  className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData.serviceTypes.includes(type.value)}
-                    onChange={() =>
-                      setFormData({
-                        ...formData,
-                        serviceTypes: toggleArrayItem(formData.serviceTypes, type.value),
-                      })
-                    }
-                    className="mt-1"
-                  />
-                  <div>
-                    <div className="font-medium">{type.label}</div>
-                    <div className="text-xs text-muted-foreground">{type.description}</div>
-                  </div>
-                </label>
-              ))}
-            </div>
+            <Label>Categories * (Select all that apply)</Label>
+            {fieldErrors.serviceTypes && <p className="field-error" role="alert">{fieldErrors.serviceTypes}</p>}
+            {availableServiceTypes.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">Loading categories…</p>
+            ) : visibleServiceTypes.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">No categories defined for this type yet.</p>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-3">
+                {visibleServiceTypes.map((type) => (
+                  <label
+                    key={type.id}
+                    className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.serviceTypes.includes(type.slug)}
+                      onChange={() =>
+                        setFormData({
+                          ...formData,
+                          serviceTypes: toggleArrayItem(formData.serviceTypes, type.slug),
+                        })
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium">{type.name}</div>
+                      {type.category && (
+                        <div className="text-xs text-muted-foreground">{type.category}</div>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">
             <Label>Disabilities Served * (Select all that apply)</Label>
-            <div className="grid md:grid-cols-2 gap-3">
-              {DISABILITY_TYPES.map((type) => (
-                <label
-                  key={type.value}
-                  className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData.disabilityTypes.includes(type.value)}
-                    onChange={() =>
-                      setFormData({
-                        ...formData,
-                        disabilityTypes: toggleArrayItem(formData.disabilityTypes, type.value),
-                      })
-                    }
-                  />
-                  <span className="font-medium text-sm">{type.label}</span>
-                </label>
-              ))}
-            </div>
+            {fieldErrors.disabilityTypes && <p className="field-error" role="alert">{fieldErrors.disabilityTypes}</p>}
+            {availableDisabilities.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">Loading disabilities…</p>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-3">
+                {availableDisabilities.map((type) => (
+                  <label
+                    key={type.id}
+                    className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.disabilityTypes.includes(type.slug)}
+                      onChange={() =>
+                        setFormData({
+                          ...formData,
+                          disabilityTypes: toggleArrayItem(formData.disabilityTypes, type.slug),
+                        })
+                      }
+                    />
+                    <span className="font-medium text-sm">{type.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">
             <Label>Age Groups Served * (Select all that apply)</Label>
+            {fieldErrors.ageGroups && <p className="field-error" role="alert">{fieldErrors.ageGroups}</p>}
             <div className="grid md:grid-cols-3 gap-3">
               {AGE_GROUPS.map((age) => (
                 <label
@@ -439,6 +610,157 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
         </CardContent>
       </Card>
 
+      {/* Type-specific details (plan §3 extension fields) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Tag className="h-5 w-5" />
+            {activeTypeMeta?.singular || 'Listing'} details
+          </CardTitle>
+          <CardDescription>Details specific to {activeTypeMeta?.label.toLowerCase() || 'this listing'}.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Delivery/format — Services, Therapies, Events */}
+          {(formData.listingType === 'SERVICE' ||
+            formData.listingType === 'THERAPY' ||
+            formData.listingType === 'EVENT') && (
+            <div className="space-y-2">
+              <Label htmlFor="deliveryMode">Delivery format</Label>
+              <select
+                id="deliveryMode"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={formData.deliveryMode}
+                onChange={(e) => setFormData({ ...formData, deliveryMode: e.target.value })}
+              >
+                <option value="">Not specified</option>
+                {DELIVERY_MODES.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Shop */}
+          {formData.listingType === 'SHOP' && (
+            <>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="condition">Condition</Label>
+                  <select
+                    id="condition"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={formData.condition}
+                    onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
+                  >
+                    <option value="">Not specified</option>
+                    {CONDITIONS.map((c) => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="brand">Brand</Label>
+                  <Input
+                    id="brand"
+                    placeholder="e.g., Tobii Dynavox"
+                    value={formData.brand}
+                    onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                  />
+                </div>
+              </div>
+              <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isForRent}
+                  onChange={(e) => setFormData({ ...formData, isForRent: e.target.checked })}
+                />
+                <div>
+                  <div className="font-medium">Available to rent</div>
+                  <div className="text-xs text-muted-foreground">Offered as a rental rather than an outright sale</div>
+                </div>
+              </label>
+            </>
+          )}
+
+          {/* School */}
+          {formData.listingType === 'SCHOOL' && (
+            <>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="enrollmentStatus">Enrollment status</Label>
+                  <Input
+                    id="enrollmentStatus"
+                    placeholder="Open, Waitlist, Closed"
+                    value={formData.enrollmentStatus}
+                    onChange={(e) => setFormData({ ...formData, enrollmentStatus: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="programType">Program type</Label>
+                  <Input
+                    id="programType"
+                    placeholder="e.g., Day school, After-school"
+                    value={formData.programType}
+                    onChange={(e) => setFormData({ ...formData, programType: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gradeLevels">Grade levels (comma-separated)</Label>
+                <Input
+                  id="gradeLevels"
+                  placeholder="K, 1, 2, 3"
+                  value={Array.isArray(formData.gradeLevels) ? formData.gradeLevels.join(', ') : ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      gradeLevels: e.target.value.split(',').map((g) => g.trim()).filter(Boolean),
+                    })
+                  }
+                />
+              </div>
+            </>
+          )}
+
+          {/* Event */}
+          {formData.listingType === 'EVENT' && (
+            <>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="startDate">Start date</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endDate">End date</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  />
+                </div>
+              </div>
+              <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isVirtual}
+                  onChange={(e) => setFormData({ ...formData, isVirtual: e.target.checked })}
+                />
+                <div>
+                  <div className="font-medium">Virtual event</div>
+                  <div className="text-xs text-muted-foreground">Attendees join online</div>
+                </div>
+              </label>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Pricing & Availability */}
       <Card>
         <CardHeader>
@@ -456,12 +778,11 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
               value={formData.priceRange}
               onChange={(e) => setFormData({ ...formData, priceRange: e.target.value })}
             >
-              <option value="FREE">Free</option>
-              <option value="BUDGET">$ - Budget Friendly (Under $50/session)</option>
-              <option value="MODERATE">$$ - Moderate ($50-$150/session)</option>
-              <option value="PREMIUM">$$$ - Premium ($150-$300/session)</option>
-              <option value="LUXURY">$$$$ - Luxury ($300+/session)</option>
-              <option value="CONTACT">Contact for Pricing</option>
+              {PRICE_RANGES.map((range) => (
+                <option key={range.value} value={range.value}>
+                  {range.label}
+                </option>
+              ))}
             </select>
           </div>
 
