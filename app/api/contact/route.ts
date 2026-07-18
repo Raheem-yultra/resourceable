@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { sendContactInquiryEmail, sendCustomerConfirmationEmail } from '@/lib/email';
+import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
 
 const contactFormSchema = z.object({
   businessId: z.string().cuid('Invalid business ID'),
@@ -14,6 +15,11 @@ const contactFormSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Abuse guard: this endpoint sends email to a user-supplied address, so cap
+    // how often one client can fire it (best-effort — see lib/rate-limit).
+    const rl = rateLimit(`contact:${clientIp(req)}`, 10, 10 * 60_000);
+    if (!rl.allowed) return tooManyRequests(rl.retryAfterSeconds);
+
     const body = await req.json();
     const validation = contactFormSchema.safeParse(body);
 

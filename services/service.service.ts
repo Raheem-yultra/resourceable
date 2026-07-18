@@ -77,8 +77,40 @@ export const serviceService = {
       relationLoadStrategy: 'join',
       where: { id },
       include: {
+        // Explicit select (NOT `include`) so the public GET /api/services/[id]
+        // response never leaks billing/PII fields — stripeCustomerId, taxId,
+        // adminNotes, licenseNumber, internal review/suspension notes, etc.
+        // Only display-safe fields plus userId/subscriptionStatus (needed by the
+        // PUT/DELETE ownership + billing-gate checks in the route) are returned.
         business: {
-          include: {
+          select: {
+            id: true,
+            userId: true,
+            businessName: true,
+            businessType: true,
+            description: true,
+            phone: true,
+            email: true,
+            website: true,
+            address: true,
+            addressLine2: true,
+            city: true,
+            state: true,
+            zipCode: true,
+            country: true,
+            latitude: true,
+            longitude: true,
+            logo: true,
+            coverImage: true,
+            yearEstablished: true,
+            verificationStatus: true,
+            verificationLevel: true,
+            isActive: true,
+            isFeatured: true,
+            hoursOfOperation: true,
+            averageRating: true,
+            totalReviews: true,
+            subscriptionStatus: true,
             user: {
               select: {
                 id: true,

@@ -12,6 +12,16 @@ export async function getAdminSession() {
   if (!session?.user || session.user.role !== 'ADMIN') {
     return null;
   }
+  // The role claim lives in a long-lived JWT. Re-check the live DB record so a
+  // demoted or deactivated admin loses access immediately, not when their token
+  // eventually expires. Cheap here — admin endpoints are low-traffic.
+  const current = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true, isActive: true },
+  });
+  if (!current || current.role !== 'ADMIN' || !current.isActive) {
+    return null;
+  }
   return session;
 }
 

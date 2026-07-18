@@ -239,11 +239,6 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
                     <div key={service.id} className="border-b last:border-0 pb-6 last:pb-0">
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-semibold text-lg">{service.name}</h3>
-                        {service.priceRange !== 'CONTACT' && (
-                          <span className="text-sm font-medium text-primary">
-                            {formatPriceRange(service.priceRange)}
-                          </span>
-                        )}
                       </div>
 
                       {service.shortDescription && (
@@ -353,8 +348,26 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Contact & Location */}
+            {/* Pass ONLY display-safe fields: this is a client component, so any
+                prop is serialized into the public page payload. The full `business`
+                row carries billing/PII fields (stripeCustomerId, taxId, adminNotes,
+                subscriptionStatus) that must never reach the browser. */}
             <BusinessContactCard
-              business={business}
+              business={{
+                id: business.id,
+                userId: business.userId,
+                businessName: business.businessName,
+                phone: business.phone,
+                email: business.email,
+                website: business.website,
+                address: business.address,
+                addressLine2: business.addressLine2,
+                city: business.city,
+                state: business.state,
+                zipCode: business.zipCode,
+                latitude: business.latitude,
+                longitude: business.longitude,
+              }}
               session={session}
               canContact={!!canContact}
               firstServiceId={business.services[0]?.id}
@@ -413,18 +426,6 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
 }
 
 // Helper functions
-function formatPriceRange(range: string): string {
-  const ranges: Record<string, string> = {
-    FREE: 'Free',
-    LOW: '$0 - $50',
-    MEDIUM: '$50 - $150',
-    HIGH: '$150 - $300',
-    PREMIUM: '$300+',
-    CONTACT: 'Contact for pricing',
-  };
-  return ranges[range] || range;
-}
-
 function formatAgeGroup(group: string): string {
   const groups: Record<string, string> = {
     INFANT: 'Infant (0-2)',

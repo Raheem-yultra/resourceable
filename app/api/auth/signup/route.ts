@@ -5,9 +5,14 @@ import { signUpSchema } from '@/lib/validations';
 import { sendVerificationEmail } from '@/lib/email';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
+import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    // Throttle account-creation (and its verification email) per client.
+    const rl = rateLimit(`signup:${clientIp(req)}`, 5, 60 * 60_000);
+    if (!rl.allowed) return tooManyRequests(rl.retryAfterSeconds);
+
     const body = await req.json();
     const validatedData = signUpSchema.parse(body);
 

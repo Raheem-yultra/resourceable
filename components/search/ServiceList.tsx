@@ -153,17 +153,6 @@ function ServiceCard({ service }: { service: Service }) {
   const [isFavorite, setIsFavorite] = useState(false);
   const typeMeta = listingTypeMeta((service.listingType as any) || 'SERVICE');
   const TypeIcon = typeMeta ? TYPE_ICONS[typeMeta.icon] || Stethoscope : Stethoscope;
-  // Price suffix depends on listing kind (a Shop item isn't priced "/session").
-  const priceSuffix =
-    service.listingType === 'SHOP'
-      ? service.isForRent
-        ? '/mo'
-        : ''
-      : service.listingType === 'EVENT'
-        ? '/ticket'
-        : service.listingType === 'SCHOOL'
-          ? '/yr'
-          : '/session';
 
   return (
     <Card className="hover:shadow-lg transition-all duration-200 hover:border-primary/50 relative group">
@@ -203,18 +192,6 @@ function ServiceCard({ service }: { service: Service }) {
       </CardHeader>
 
       <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 pb-4 sm:pb-6">
-        {(service.priceMin || service.priceMax) && (
-          <div className="flex items-baseline gap-2 p-2.5 sm:p-3 bg-primary/5 rounded-lg border border-primary/20">
-            <span className="text-2xl sm:text-3xl font-bold text-primary">
-              ${service.priceMin || 0}
-              {service.priceMax && service.priceMax !== service.priceMin && (
-                <span className="text-lg sm:text-2xl"> - ${service.priceMax}</span>
-              )}
-            </span>
-            {priceSuffix && <span className="text-xs sm:text-sm text-muted-foreground">{priceSuffix}</span>}
-          </div>
-        )}
-
         <TypeInfoLine service={service} />
 
         {(() => {

@@ -21,7 +21,7 @@ export default function HomePage() {
           className="relative w-full min-h-[calc(100vh-4rem)] sm:min-h-[85vh] flex items-center justify-center px-4 sm:px-6 lg:px-12 py-12 sm:py-20 lg:py-32 overflow-hidden"
           aria-labelledby="hero-title"
         >
-          <div className="relative z-10 w-full max-w-7xl theme-panel px-4 py-10 sm:px-8 sm:py-14">
+          <div className="relative z-10 w-full max-w-7xl px-4 py-10 sm:px-8 sm:py-14">
             <div className="mb-6 sm:mb-8 lg:mb-12 flex flex-col items-center gap-1 sm:gap-2">
               <h1 id="hero-title" className="sr-only">ResourceAble - Connecting Special Needs with Quality Care</h1>
               <TextCursorProximity

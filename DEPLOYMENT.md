@@ -203,3 +203,19 @@ and use the `whsec_...` it prints as your local `STRIPE_WEBHOOK_SECRET`.
   stakeholder-presentation dataset (all listing types, reviews, admin queue);
   `seed:fake` is the older plumbing-test set. Clean up with the
   `%@example.test` DELETE from section 3.
+
+### Security notes
+- **Security headers** (HSTS, X-Frame-Options, X-Content-Type-Options,
+  Referrer-Policy, Permissions-Policy) are set in `next.config.mjs`. A strict
+  **Content-Security-Policy is intentionally NOT set** — Next.js relies on inline
+  scripts and a wrong CSP silently breaks the app; add it via its own tested
+  rollout (report-only first).
+- **Image optimizer** is locked down (`images.remotePatterns: []`) because the app
+  serves no remote images. If you later serve images from a remote host (e.g.
+  Supabase Storage), add **that specific host** — do NOT restore a `**` wildcard.
+- **Rate limiting** on the unauthenticated email/account endpoints (contact,
+  forgot-password, signup, reset-password) is **best-effort and in-memory**
+  (`lib/rate-limit.ts`) — it's per-serverless-instance, so it slows casual abuse
+  but is not a strict global limit. For production-grade limits (and to cover
+  credentials **login** brute-force, which is not yet rate-limited) wire up a
+  shared store such as Upstash Redis / `@upstash/ratelimit`.

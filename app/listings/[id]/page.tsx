@@ -89,15 +89,6 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
           )}
         </div>
 
-        {(service.priceMin != null || service.priceMax != null) && (
-          <div className="mt-4 inline-flex items-baseline gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2">
-            <span className="text-2xl font-bold text-primary">
-              ${String(service.priceMin ?? 0)}
-              {service.priceMax != null && String(service.priceMax) !== String(service.priceMin) && <span className="text-xl"> – ${String(service.priceMax)}</span>}
-            </span>
-          </div>
-        )}
-
         <p className="mt-4 whitespace-pre-wrap leading-relaxed">{service.description}</p>
 
         {service.serviceTypes.length > 0 && (

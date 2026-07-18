@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { sendPasswordResetEmail } from '@/lib/email';
+import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    // Throttle so this can't be used to bomb a victim with reset emails.
+    const rl = rateLimit(`forgot:${clientIp(req)}`, 5, 15 * 60_000);
+    if (!rl.allowed) return tooManyRequests(rl.retryAfterSeconds);
+
     const { email } = await req.json();
 
     if (!email || !email.includes('@')) {
