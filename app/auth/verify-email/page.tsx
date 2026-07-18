@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -12,17 +12,23 @@ function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('token');
-  
+
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'pending'>('pending');
   const [message, setMessage] = useState('');
-  const [email, setEmail] = useState('');
+  // Prefill the resend form when signup passed the email along (?email=...)
+  const [email, setEmail] = useState(searchParams.get('email') ?? '');
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
+  // Verification consumes the token server-side, so it must only fire once —
+  // a second call (e.g. React 18 dev double-effect) would report "expired".
+  const verifyFiredRef = useRef(false);
 
   useEffect(() => {
-    if (token) {
+    if (token && !verifyFiredRef.current) {
+      verifyFiredRef.current = true;
       verifyEmail(token);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const verifyEmail = async (verificationToken: string) => {

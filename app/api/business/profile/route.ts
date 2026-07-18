@@ -134,13 +134,14 @@ export async function PUT(req: NextRequest) {
       ? await prisma.service.update({ where: { id: existingService.id }, data: serviceData })
       : await prisma.service.create({ data: { ...serviceData, businessId: business.id } });
 
-    // Sync service-type mappings — batch the slug lookup + inserts instead of a query per checkbox
+    // Sync service-type mappings to EXACTLY the submitted set — batch the slug
+    // lookup + inserts, and always clear first so unchecking everything works.
+    await prisma.serviceTypeMap.deleteMany({ where: { serviceId: service.id } });
     if (data.serviceTypes.length > 0) {
       const types = await prisma.serviceType.findMany({
         where: { slug: { in: data.serviceTypes } },
         select: { id: true },
       });
-      await prisma.serviceTypeMap.deleteMany({ where: { serviceId: service.id } });
       if (types.length > 0) {
         await prisma.serviceTypeMap.createMany({
           data: types.map((t) => ({ serviceId: service.id, serviceTypeId: t.id })),
@@ -149,13 +150,13 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // Sync disability mappings — same batched approach
+    // Sync disability mappings — same clear-then-recreate approach
+    await prisma.businessDisability.deleteMany({ where: { businessId: business.id } });
     if (data.disabilityTypes.length > 0) {
       const disabilities = await prisma.disability.findMany({
         where: { slug: { in: data.disabilityTypes } },
         select: { id: true },
       });
-      await prisma.businessDisability.deleteMany({ where: { businessId: business.id } });
       if (disabilities.length > 0) {
         await prisma.businessDisability.createMany({
           data: disabilities.map((d) => ({ businessId: business.id, disabilityId: d.id })),

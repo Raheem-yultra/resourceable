@@ -1,19 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import TextCursorProximity from '@/components/ui/text-cursor-proximity';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export default function HomePage() {
-  const router = useRouter();
   const heroRef = useRef<HTMLDivElement>(null);
-
-  const handleSearchClick = () => {
-    router.push('/search');
-  };
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden">
@@ -71,13 +65,14 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col gap-4 sm:gap-6 items-center px-4">
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-6 justify-center w-full sm:w-auto">
-                <Button 
-                  onClick={handleSearchClick}
-                  size="lg" 
+                {/* Native link (not onClick+router.push) so it works even before
+                    hydration completes — this page's animation JS loads last. */}
+                <Button
+                  asChild
+                  size="lg"
                   className="text-base sm:text-lg lg:text-xl px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-7 h-auto font-semibold min-h-[48px] sm:min-h-[56px] lg:min-h-[60px] w-full sm:w-auto sm:min-w-[180px] lg:min-w-[200px]"
-                  aria-label="Search for special needs services"
                 >
-                  Find Services
+                  <Link href="/search" aria-label="Search for special needs services">Find Services</Link>
                 </Button>
                 <Button 
                   asChild 

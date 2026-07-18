@@ -29,7 +29,9 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findUnique({
           where: {
-            email: credentials.email,
+            // Emails are stored lowercased at signup — normalize before lookup
+            // so mixed-case sign-in attempts still match.
+            email: credentials.email.toLowerCase(),
           },
           include: {
             business: true,

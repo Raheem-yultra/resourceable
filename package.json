@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "seed:fake": "node scripts/seed-fake-accounts.js",
+    "seed:demo": "node scripts/seed-demo-data.js",
     "seed:categories": "node scripts/seed-categories.mjs",
     "seed:resources": "node scripts/seed-resources.mjs",
     "stripe:setup": "node scripts/stripe-setup.js",

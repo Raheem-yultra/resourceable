@@ -16,7 +16,9 @@ const optionalNumber = z
   });
 
 export const signUpSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  // Emails are canonically lowercase everywhere (auth lookup, reset, resend all
+  // lowercase before querying) — normalize at the entry point so it stays true.
+  email: z.string().trim().toLowerCase().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(2, 'Name must be at least 2 characters').optional(),
   role: z.enum(['USER', 'BUSINESS']).default('USER'),
@@ -38,6 +40,15 @@ export const signUpSchema = z.object({
 }, {
   message: 'Valid phone number is required for business accounts',
   path: ['phone'],
+}).refine((data) => {
+  // Zip is required for BUSINESS accounts (drives location visibility in search)
+  if (data.role === 'BUSINESS') {
+    return !!data.zipCode && /^\d{5}$/.test(data.zipCode.trim());
+  }
+  return true;
+}, {
+  message: 'A valid 5-digit zip code is required for business accounts',
+  path: ['zipCode'],
 });
 
 export const signInSchema = z.object({

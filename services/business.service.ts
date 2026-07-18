@@ -30,23 +30,6 @@ export const businessService = {
     });
   },
 
-  async getBusinessById(id: string) {
-    return prisma.business.findUnique({
-      relationLoadStrategy: 'join',
-      where: { id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-          },
-        },
-        services: true,
-      },
-    });
-  },
-
   async getBusinessByUserId(userId: string) {
     return prisma.business.findUnique({
       relationLoadStrategy: 'join',
@@ -54,24 +37,6 @@ export const businessService = {
       include: {
         services: true,
       },
-    });
-  },
-
-  async updateBusiness(id: string, data: Partial<{
-    businessName: string;
-    description: string;
-    phone: string;
-    email: string;
-    website: string;
-    address: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    logo: string;
-  }>) {
-    return prisma.business.update({
-      where: { id },
-      data,
     });
   },
 
@@ -125,6 +90,7 @@ export const businessService = {
 
   async getBusinessesByStatus(status: VerificationStatus, filters?: AdminBusinessFilters) {
     return prisma.business.findMany({
+      relationLoadStrategy: 'join',
       where: this.buildAdminFilter({ verificationStatus: status }, filters),
       select: {
         id: true,
@@ -177,32 +143,6 @@ export const businessService = {
       },
       orderBy: {
         createdAt: 'asc',
-      },
-    });
-  },
-
-  async getPendingBusinesses() {
-    return this.getBusinessesByStatus('PENDING');
-  },
-
-  async getAllBusinesses(filters?: {
-    verificationStatus?: VerificationStatus;
-  }) {
-    return prisma.business.findMany({
-      relationLoadStrategy: 'join',
-      where: filters,
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-          },
-        },
-        services: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
       },
     });
   },

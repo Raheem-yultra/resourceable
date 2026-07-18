@@ -23,7 +23,11 @@ export default withAuth(
         }
 
         // Business routes - allow ADMIN or BUSINESS
-        if (path.startsWith('/business/dashboard') || path.startsWith('/business/profile')) {
+        if (
+          path.startsWith('/business/dashboard') ||
+          path.startsWith('/business/profile') ||
+          path.startsWith('/business/listings')
+        ) {
           return token?.role === 'BUSINESS' || token?.role === 'ADMIN';
         }
 
@@ -40,9 +44,10 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    '/admin/:path*', 
+    '/admin/:path*',
     '/business/dashboard/:path*',
-    '/business/profile/:path*', 
+    '/business/profile/:path*',
+    '/business/listings/:path*',
     '/messages/:path*'
   ],
 };

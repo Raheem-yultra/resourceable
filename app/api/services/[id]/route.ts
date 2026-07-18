@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceService } from '@/services/service.service';
 import { listingSchema } from '@/lib/validations';
+import { isBillingBlocked } from '@/lib/billing';
 
 export async function GET(
   req: NextRequest,
@@ -43,6 +44,14 @@ export async function PUT(
     // Verify ownership
     if (service.business.userId !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Same gate as listing creation: lapsed billing blocks listing management.
+    if (isBillingBlocked(service.business.subscriptionStatus)) {
+      return NextResponse.json(
+        { error: 'Your subscription is inactive. Reactivate billing to manage listings.', code: 'BILLING_INACTIVE' },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();

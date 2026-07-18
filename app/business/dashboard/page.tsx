@@ -275,18 +275,20 @@ export default async function BusinessDashboard({
           </Card>
         </div>
 
-        {/* Info Banner */}
+        {/* Getting-started note */}
         <div className="mt-6 sm:mt-8 theme-note p-4 sm:p-6">
-          <h3 className="font-semibold mb-2 text-sm sm:text-base">🎉 Welcome to ResourceAble!</h3>
+          <h3 className="font-semibold mb-2 text-sm sm:text-base">Getting the most out of ResourceAble</h3>
           <p className="text-xs sm:text-sm mb-3 sm:mb-4">
-            Your account has been created successfully. Complete your comprehensive business profile to showcase all your services, specializations, and details to families in need of support.
+            Start with your business profile — it holds your contact details, location, specializations, and the
+            information families see first. Then add a listing for each service, therapy, product, program, or event
+            you offer.
           </p>
-          <p className="text-xs">
-            <strong>One Profile, Complete Information:</strong> Instead of creating multiple service listings, you'll have one comprehensive profile where you can add all your services, disabilities served, age groups, pricing, and availability.
-          </p>
-          <p className="text-xs mt-2">
-            Note: Your business will be visible to customers once approved by our admin team.
-          </p>
+          {!isApproved && (
+            <p className="text-xs">
+              <strong>Note:</strong> Your business becomes visible to families once approved by our admin team.
+              You&apos;ll get an email when that happens.
+            </p>
+          )}
         </div>
       </div>
     </div>

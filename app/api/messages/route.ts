@@ -200,58 +200,82 @@ async function getConversations(
     where.status = { not: 'READ' };
   }
 
-  // Get all messages for this user
+  // Lean scan: only the fields grouping needs — no per-row user/business joins.
+  // Partner details are hydrated afterwards for just the paginated page, which
+  // keeps the payload small even as message history grows.
   const messages = await prisma.message.findMany({
-    relationLoadStrategy: 'join',
     where,
-    include: {
-      sender: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          business: {
-            select: {
-              id: true,
-              businessName: true,
-              logo: true,
-            },
-          },
-        },
-      },
-      receiver: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          business: {
-            select: {
-              id: true,
-              businessName: true,
-              logo: true,
-            },
-          },
-        },
-      },
+    select: {
+      id: true,
+      senderId: true,
+      receiverId: true,
+      subject: true,
+      content: true,
+      status: true,
+      createdAt: true,
     },
     orderBy: {
       createdAt: 'desc',
     },
   });
 
-  // Group by conversation partner
-  const conversationMap = new Map();
+  // Group by conversation partner (newest-first, so the first message seen per
+  // partner is the conversation's last message).
+  const conversationMap = new Map<
+    string,
+    {
+      partnerId: string;
+      partner: Record<string, unknown> | null;
+      lastMessage: (typeof messages)[number];
+      unreadCount: number;
+      totalMessages: number;
+    }
+  >();
 
-  messages.forEach((message: any) => {
+  for (const message of messages) {
     const partnerId = message.senderId === userId ? message.receiverId : message.senderId;
-    const partner = message.senderId === userId ? message.receiver : message.sender;
 
-    if (!conversationMap.has(partnerId)) {
-      conversationMap.set(partnerId, {
+    let conversation = conversationMap.get(partnerId);
+    if (!conversation) {
+      conversation = {
         partnerId,
-        partner: {
+        partner: null,
+        lastMessage: message,
+        unreadCount: 0,
+        totalMessages: 0,
+      };
+      conversationMap.set(partnerId, conversation);
+    }
+
+    conversation.totalMessages++;
+
+    // Count unread messages where current user is receiver
+    if (message.receiverId === userId && message.status !== 'READ') {
+      conversation.unreadCount++;
+    }
+  }
+
+  // Paginate first, then hydrate partner info for only this page in one query.
+  const pageConversations = Array.from(conversationMap.values()).slice(skip, skip + limit);
+  if (pageConversations.length === 0) return [];
+
+  const partners = await prisma.user.findMany({
+    relationLoadStrategy: 'join',
+    where: { id: { in: pageConversations.map((c) => c.partnerId) } },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      business: { select: { id: true, businessName: true, logo: true } },
+    },
+  });
+  const partnerById = new Map(partners.map((p) => [p.id, p]));
+
+  for (const conversation of pageConversations) {
+    const partner = partnerById.get(conversation.partnerId);
+    conversation.partner = partner
+      ? {
           id: partner.id,
           name: partner.name,
           email: partner.email,
@@ -259,23 +283,9 @@ async function getConversations(
           businessName: partner.business?.businessName,
           businessId: partner.business?.id,
           logo: partner.business?.logo,
-        },
-        lastMessage: message,
-        unreadCount: 0,
-        totalMessages: 0,
-      });
-    }
+        }
+      : { id: conversation.partnerId, name: null, email: '', role: 'USER' };
+  }
 
-    const conversation = conversationMap.get(partnerId);
-    conversation.totalMessages++;
-
-    // Count unread messages where current user is receiver
-    if (message.receiverId === userId && message.status !== 'READ') {
-      conversation.unreadCount++;
-    }
-  });
-
-  // Convert to array and apply pagination
-  return Array.from(conversationMap.values())
-    .slice(skip, skip + limit);
+  return pageConversations;
 }

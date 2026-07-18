@@ -144,6 +144,8 @@ async function main() {
         password: passwordHash,
         role: 'BUSINESS',
         isActive: true,
+        // Sign-in requires a verified email — without this, demo accounts can't log in.
+        emailVerified: new Date(),
       },
       create: {
         email,
@@ -152,6 +154,7 @@ async function main() {
         role: 'BUSINESS',
         phone: `555-000-${label}`,
         isActive: true,
+        emailVerified: new Date(),
       },
     });
 

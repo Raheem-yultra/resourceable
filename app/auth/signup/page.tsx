@@ -53,6 +53,17 @@ export default function SignUpPage() {
     } else if (formData.phone.trim() && !phoneRegex.test(formData.phone)) {
       errors.phone = 'Please enter a valid phone number';
     }
+
+    // Zip code - required for business (drives service location visibility)
+    if (formData.role === 'BUSINESS') {
+      if (!formData.zipCode.trim()) {
+        errors.zipCode = 'Zip code is required for business accounts';
+      } else if (!/^\d{5}$/.test(formData.zipCode.trim())) {
+        errors.zipCode = 'Please enter a valid 5-digit zip code';
+      }
+    } else if (formData.zipCode.trim() && !/^\d{5}$/.test(formData.zipCode.trim())) {
+      errors.zipCode = 'Please enter a valid 5-digit zip code';
+    }
     
     if (!formData.password) {
       errors.password = 'Password is required';
@@ -98,19 +109,15 @@ export default function SignUpPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        // Show detailed error for debugging
-        const errorMessage = data.details 
-          ? `${data.error}: ${data.details}` 
-          : data.message 
-          ? `${data.error}: ${data.message}`
-          : data.error || 'Failed to create account';
-        setError(errorMessage);
+        // Prefer the first field-level message from Zod details, if present
+        const detailMessage = Array.isArray(data.details) ? data.details[0]?.message : undefined;
+        setError(detailMessage || data.message || data.error || 'Failed to create account');
         setLoading(false);
         return;
       }
 
-      // Redirect to verify email page
-      router.push('/auth/verify-email');
+      // Redirect to verify email page (email prefills the resend form there)
+      router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email.trim().toLowerCase())}`);
     } catch (err) {
       setError('An error occurred. Please try again.');
       setLoading(false);
@@ -220,16 +227,19 @@ export default function SignUpPage() {
                 <Input
                   id="zipCode"
                   type="text"
+                  inputMode="numeric"
                   placeholder="12345"
                   value={formData.zipCode}
                   onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
-                  className="pl-10"
+                  className={`pl-10 ${fieldErrors.zipCode ? 'border-destructive' : ''}`}
+                  aria-invalid={!!fieldErrors.zipCode}
                   maxLength={5}
                   required={formData.role === 'BUSINESS'}
                 />
               </div>
+              {fieldErrors.zipCode && <p className="text-xs text-destructive" role="alert">{fieldErrors.zipCode}</p>}
               <p className="text-xs text-muted-foreground">
-                {formData.role === 'BUSINESS' 
+                {formData.role === 'BUSINESS'
                   ? 'Required for service location visibility'
                   : 'Helps us show relevant services in your area'
                 }
@@ -249,12 +259,13 @@ export default function SignUpPage() {
                   placeholder="(555) 123-4567"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="pl-10"
+                  className={`pl-10 ${fieldErrors.phone ? 'border-destructive' : ''}`}
+                  aria-invalid={!!fieldErrors.phone}
                   required={formData.role === 'BUSINESS'}
                 />
               </div>
               {fieldErrors.phone && (
-                <p className="text-xs text-destructive">{fieldErrors.phone}</p>
+                <p className="text-xs text-destructive" role="alert">{fieldErrors.phone}</p>
               )}
               <p className="text-xs text-muted-foreground">
                 {formData.role === 'BUSINESS' 
