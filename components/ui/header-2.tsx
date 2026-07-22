@@ -123,6 +123,7 @@ export function Header() {
 	}, [open]);
 
 	return (
+		<>
 		<header
 			className={cn(
 				'sticky top-0 z-50 mx-auto w-full max-w-5xl border-b border-border/70 bg-background/85 backdrop-blur-xl md:rounded-2xl md:border md:transition-all md:ease-out',
@@ -220,7 +221,13 @@ export function Header() {
 					<MenuToggleIcon open={open} className="size-5" duration={300} />
 				</Button>
 			</nav>
+		</header>
 
+			{/* Rendered OUTSIDE <header> on purpose: the header has backdrop-filter,
+			    which makes it the containing block for position:fixed descendants —
+			    nesting this panel inside it collapsed the fixed inset to ~0 height,
+			    so the mobile menu opened invisibly. As a sibling it sizes to the
+			    viewport. */}
 			<div
 				id="mobile-navigation-menu"
 				className={cn(
@@ -285,7 +292,7 @@ export function Header() {
 					</div>
 				</div>
 			</div>
-		</header>
+		</>
 	);
 }
 

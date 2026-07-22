@@ -60,8 +60,7 @@ export default function HomePage() {
               />
             </div>
             <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground mb-8 sm:mb-12 lg:mb-16 max-w-4xl mx-auto text-center leading-relaxed px-2">
-              Your trusted platform to discover verified providers offering specialized services for autism, down syndrome,
-              ADHD, and other special needs in your community.
+              Your trusted platform to discover verified providers offering specialized services in your community.
             </p>
             <div className="flex flex-col gap-4 sm:gap-6 items-center px-4">
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-6 justify-center w-full sm:w-auto">
