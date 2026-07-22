@@ -23,7 +23,7 @@ export default function HomePage() {
         >
           <div className="relative z-10 w-full max-w-7xl px-4 py-10 sm:px-8 sm:py-14">
             <div className="mb-6 sm:mb-8 lg:mb-12 flex flex-col items-center gap-1 sm:gap-2">
-              <h1 id="hero-title" className="sr-only">ResourceAble - Connecting Special Needs with Quality Care</h1>
+              <h1 id="hero-title" className="sr-only">ResourceAble - Connecting you with trusted disability services</h1>
               <TextCursorProximity
                 label="ResourceAble"
                 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold will-change-transform tracking-tight text-center"
@@ -42,7 +42,7 @@ export default function HomePage() {
                 containerRef={heroRef}
               />
               <TextCursorProximity
-                label="Connecting Special Needs with Quality Care"
+                label="Connecting You with Trusted Disability Services"
                 className="text-base sm:text-xl md:text-2xl lg:text-4xl xl:text-5xl font-semibold will-change-transform text-muted-foreground text-center px-2"
                 styles={{
                   transform: {
@@ -71,7 +71,7 @@ export default function HomePage() {
                   size="lg"
                   className="text-base sm:text-lg lg:text-xl px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-7 h-auto font-semibold min-h-[48px] sm:min-h-[56px] lg:min-h-[60px] w-full sm:w-auto sm:min-w-[180px] lg:min-w-[200px]"
                 >
-                  <Link href="/search" aria-label="Search for special needs services">Find Services</Link>
+                  <Link href="/search" aria-label="Search disability services">Find Services</Link>
                 </Button>
                 <Button 
                   asChild 
@@ -105,7 +105,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3 lg:mb-4">Search</h3>
                 <p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                  Browse services by location, condition, and type. No account needed to search.
+                  Browse services by location, disability, and type. No account needed to search.
                 </p>
               </div>
               <div className="text-center theme-panel p-6">
@@ -121,9 +121,9 @@ export default function HomePage() {
                 <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5 lg:mb-6 text-primary-foreground text-xl sm:text-2xl font-bold" aria-hidden="true">
                   3
                 </div>
-                <h3 className="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3 lg:mb-4">Get Care</h3>
+                <h3 className="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3 lg:mb-4">Get Support</h3>
                 <p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                  Access verified, quality services tailored to your loved one's unique needs.
+                  Access verified, quality services matched to the needs that matter most to you and your family.
                 </p>
               </div>
             </div>

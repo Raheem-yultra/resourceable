@@ -169,7 +169,7 @@ async function main() {
       email: 'caringhearts@test.com',
       businessName: 'Caring Hearts Respite Services',
       businessType: 'Respite Care Provider',
-      description: 'Professional respite care for families of children with special needs. Give yourself a break while your child enjoys supervised activities in a safe, fun environment. Licensed caregivers available 24/7.',
+      description: 'Professional respite care for families of children with disabilities. Give yourself a break while your child enjoys supervised activities in a safe, fun environment. Licensed caregivers available 24/7.',
       phone: '(555) 345-6789',
       website: 'https://caringhearts.example.com',
       address: '789 Elm Street',

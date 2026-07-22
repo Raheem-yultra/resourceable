@@ -4,8 +4,8 @@ import { ConditionalNavbar } from '@/components/layout/ConditionalNavbar';
 import { Providers } from '@/components/layout/Providers';
 
 export const metadata: Metadata = {
-  title: 'ResourceAble - Special Needs Services Directory',
-  description: 'Find quality services for autism, down syndrome, ADHD, and more',
+  title: 'ResourceAble - Disability Services Directory',
+  description: 'Find trusted disability services and support from verified providers in your community — autism, Down syndrome, ADHD, and more.',
 };
 
 export default function RootLayout({

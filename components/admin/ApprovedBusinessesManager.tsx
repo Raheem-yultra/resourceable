@@ -481,7 +481,7 @@ export function ApprovedBusinessesManager() {
 
               {selectedBusiness.businessDisabilities && selectedBusiness.businessDisabilities.length > 0 && (
                 <div className="p-4 bg-accent/30 rounded-lg border border-border">
-                  <h3 className="font-semibold mb-2 flex items-center gap-2"><Users className="h-4 w-4 text-primary" />Disabilities & Conditions Served</h3>
+                  <h3 className="font-semibold mb-2 flex items-center gap-2"><Users className="h-4 w-4 text-primary" />Disabilities Served</h3>
                   <div className="flex flex-wrap gap-2">
                     {selectedBusiness.businessDisabilities.map((bd, idx) => (
                       <span key={idx} className="inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 border border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800">{bd.disability.name}</span>

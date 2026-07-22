@@ -256,7 +256,7 @@ function ServiceCard({ service }: { service: Service }) {
 
         {service.disabilities && service.disabilities.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Conditions</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Supports</h4>
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {service.disabilities.slice(0, 2).map((disability) => (
                 <span

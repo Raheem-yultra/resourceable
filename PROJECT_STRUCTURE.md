@@ -1,4 +1,4 @@
-# Project Structure - Special Needs Services Directory
+# Project Structure - Disability Services Directory
 
 ## Complete File Tree
 

@@ -56,7 +56,7 @@ export interface BrowseExperienceProps {
 export function BrowseExperience({
   initialListingType,
   initialAgeGroup,
-  title = 'Find Special Needs Services',
+  title = 'Find Disability Services',
   subtitle,
   syncUrl = false,
   showTabs = true,

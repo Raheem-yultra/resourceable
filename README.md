@@ -1,6 +1,6 @@
-# Special Needs Services Directory
+# Disability Services Directory
 
-A Next.js 14 full-stack web application that connects families with special-needs service providers.
+A Next.js 14 full-stack web application that connects families and individuals with disability service providers.
 
 ## Features
 
