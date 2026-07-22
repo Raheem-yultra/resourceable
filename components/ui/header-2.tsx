@@ -143,11 +143,10 @@ export function Header() {
 					},
 				)}
 			>
-				<Link href={homeLink} className="flex items-center">
-					<img
-						src="/logo.png" 
-						alt="ResourceAble" 
-						className="h-8 md:h-10 w-auto drop-shadow-[0_2px_6px_hsl(var(--primary)/0.18)]"
+				<Link href={homeLink} className="flex items-center" aria-label="ResourceAble home">
+					<WordmarkIcon
+						aria-hidden="true"
+						className="h-6 md:h-7 w-auto text-primary drop-shadow-[0_2px_6px_hsl(var(--primary)/0.18)]"
 					/>
 				</Link>
 				<div className="hidden items-center gap-2 md:flex">
