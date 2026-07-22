@@ -30,7 +30,7 @@ Local development uses `.env.local`. **Never commit real values** — only
 | Variable | Required | What it is / where to get it |
 |---|---|---|
 | `DATABASE_URL` | ✅ | Supabase **pooled** connection string (port `6543`, `pgbouncer=true&connection_limit=1`). Supabase → Project → Connect → "Transaction pooler". |
-| `DIRECT_URL` | ✅ | Supabase **direct** connection string (port `5432`). Used by Prisma for `db push` / migrations only. |
+| `DIRECT_URL` | ✅ | Supabase **session** connection string — **port `5432`, and WITHOUT `pgbouncer=true` / `connection_limit`**. Used by Prisma for `db push` / migrations only. ⚠️ It must NOT be the same as `DATABASE_URL`: the transaction pooler (`6543`) cannot run DDL, so `prisma db push` hangs forever with no error if this points at `6543`. See the gotcha in §9. |
 | `NEXTAUTH_SECRET` | ✅ | Random 32+ byte secret. Generate: `openssl rand -base64 32`. **Different value per environment.** |
 | `NEXTAUTH_URL` | ✅ | The canonical site URL, e.g. `https://yourdomain.com`. Also used to build email links and Stripe redirect URLs — must be correct or those break. |
 | `RESEND_API_KEY` | ✅ | Resend → API Keys. Emails silently fail without it. |
@@ -194,6 +194,14 @@ and use the `whsec_...` it prints as your local `STRIPE_WEBHOOK_SECRET`.
 - **Serverless + pooler:** `DATABASE_URL` must keep `connection_limit=1` on the
   Supabase transaction pooler — serverless functions each open their own
   connection.
+- **`prisma db push` hangs forever → check `DIRECT_URL`.** The transaction pooler
+  (port `6543`, `pgbouncer=true`) cannot run DDL, and Prisma gives no error — it just
+  blocks. `DIRECT_URL` must be the **session** connection: same host, **port 5432**,
+  with `pgbouncer` and `connection_limit` removed. Quick check:
+  ```bash
+  node -e "require('@next/env').loadEnvConfig('.');for(const k of ['DATABASE_URL','DIRECT_URL']){const u=new URL(process.env[k]);console.log(k,u.port)}"
+  ```
+  If both print `6543`, fix `DIRECT_URL` (locally in `.env.local` **and** in Vercel).
 - **Env changes require a redeploy** on Vercel; they are baked in at build time
   for some values.
 - **Stripe env vars are lazy-checked:** a missing key doesn't fail the build —
@@ -203,6 +211,46 @@ and use the `whsec_...` it prints as your local `STRIPE_WEBHOOK_SECRET`.
   stakeholder-presentation dataset (all listing types, reviews, admin queue);
   `seed:fake` is the older plumbing-test set. Clean up with the
   `%@example.test` DELETE from section 3.
+
+### Provider verification (pre-approval checks)
+
+Approval is still a **manual admin decision**. Before an application reaches the queue,
+`lib/verification` gathers evidence automatically so the admin adjudicates exceptions
+instead of investigating every row. The governing rule: never verify what the provider
+typed — match it against a source the provider does not control.
+
+| Check | Source | Needs config? |
+|---|---|---|
+| NPI registry | CMS **NPPES** public API | No — free, keyless |
+| Address | **US Census** geocoder | No — free, keyless |
+| Website | DNS + **RDAP** (WHOIS successor) | No |
+| Email domain | Account email vs. website domain | No |
+| Duplicate provider | This database | No |
+| Phone | NANP format, plus NPPES's registered number | No |
+
+- **Nothing to set up.** All three external sources are free, public and keyless, so
+  this works in every environment with no vendor account and no secret to rotate.
+- **Results are evidence, never decisions.** The checks never touch
+  `verificationStatus` or `verificationLevel`. `PASS/WARN/FAIL/SKIPPED/ERROR` are
+  distinct on purpose — **ERROR means a source was unreachable, not that the provider
+  is suspect**, so an outage can never look like fraud.
+- **When they run:** automatically on a provider profile save while the business is
+  `PENDING` (adds ~5s to that one request), and on demand from the **Re-run** button on
+  each row in the admin queue. Results are stored one-per-check in `VerificationCheck`
+  and shown as a checklist with a verdict pill (`All checks clear` / `N to review` /
+  `N failed`).
+- **Side benefit:** a successful address check backfills `latitude`/`longitude` from
+  the geocoder, so distance/map features get coordinates without a separate pass.
+- **Grant `LICENSED` only on a registry match** (NPI or a state board), never on a
+  self-reported licence number. `BASIC_VERIFIED` is the right tier for "real, reachable
+  entity". See the admin queue's Verification Level control.
+- ⚠️ **Phone ownership is NOT verified.** The phone check validates format and compares
+  against the number NPPES holds for the NPI; proving the applicant actually answers the
+  listed number needs an SMS/voice OTP, which needs a provider (Twilio/MessageBird) this
+  project has no credentials for. Wire that up for a stronger Layer 1.
+- Demo data seeded by `seed:demo` uses `*.example.com` websites, which are RFC 2606
+  reserved domains — the checks correctly flag those as **Review**, so a seeded
+  environment will not show "all clear". That is expected, not a bug.
 
 ### Security notes
 - **Security headers** (HSTS, X-Frame-Options, X-Content-Type-Options,

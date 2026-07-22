@@ -18,6 +18,11 @@ import {
   Building2, Mail, Phone, MapPin, Globe, Calendar, DollarSign, Users,
   CheckCircle, XCircle, ChevronDown, ChevronUp, FileText, Search,
 } from 'lucide-react';
+import {
+  VerificationSignals,
+  VerificationVerdictBadge,
+  type VerificationCheckView,
+} from '@/components/admin/VerificationSignals';
 
 interface Business {
   id: string;
@@ -34,11 +39,14 @@ interface Business {
   zipCode?: string;
   yearEstablished?: number;
   licenseNumber?: string;
+  npi?: string;
+  checksRunAt?: string | null;
   verificationStatus: string;
   createdAt: string;
   user: { id: string; email: string; name?: string; createdAt: string };
   services?: Array<{ id: string; name: string; description: string }>;
   businessDisabilities?: Array<{ disability: { name: string; slug: string } }>;
+  verificationChecks?: VerificationCheckView[];
 }
 
 type StatusFilter = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -182,6 +190,15 @@ export function AdminBusinessVerification() {
     }
   };
 
+  // Splice re-run results back into the row without refetching the whole queue.
+  const applyChecks = (businessId: string, checks: VerificationCheckView[]) => {
+    setBusinesses((prev) =>
+      prev.map((b) =>
+        b.id === businessId ? { ...b, verificationChecks: checks, checksRunAt: new Date().toISOString() } : b
+      )
+    );
+  };
+
   const clearFilters = () => {
     setSearchInput('');
     setAppliedSearch('');
@@ -300,7 +317,11 @@ export function AdminBusinessVerification() {
                       <Building2 className="h-6 w-6 text-primary" />
                       <div>
                         <CardTitle className="text-xl">{business.businessName}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">{business.businessType || 'Service Provider'}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <p className="text-sm text-muted-foreground">{business.businessType || 'Service Provider'}</p>
+                          {/* Always visible so the queue is triageable without expanding rows */}
+                          <VerificationVerdictBadge checks={business.verificationChecks || []} />
+                        </div>
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => toggleCard(business.id)} aria-label={isExpanded ? 'Collapse' : 'Expand'}>
@@ -325,6 +346,15 @@ export function AdminBusinessVerification() {
 
                   {isExpanded && (
                     <>
+                      {/* Evidence first — the admin's job is to adjudicate exceptions,
+                          not to re-read the self-reported fields below. */}
+                      <VerificationSignals
+                        businessId={business.id}
+                        checks={business.verificationChecks || []}
+                        checksRunAt={business.checksRunAt}
+                        onUpdated={(checks) => applyChecks(business.id, checks)}
+                      />
+
                       {business.description && (
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
@@ -369,6 +399,19 @@ export function AdminBusinessVerification() {
                         <div className="grid md:grid-cols-2 gap-3 pl-6 text-sm">
                           {business.yearEstablished && <div><span className="font-medium">Year Established:</span> {business.yearEstablished}</div>}
                           {business.licenseNumber && <div><span className="font-medium">License #:</span> {business.licenseNumber}</div>}
+                          {business.npi && (
+                            <div>
+                              <span className="font-medium">NPI:</span>{' '}
+                              <a
+                                href={`https://npiregistry.cms.hhs.gov/provider-view/${business.npi}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                {business.npi}
+                              </a>
+                            </div>
+                          )}
                         </div>
                       </div>
 

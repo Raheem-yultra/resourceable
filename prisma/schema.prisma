@@ -66,6 +66,12 @@ model Business {
   yearEstablished      Int?
   licenseNumber        String?
   taxId                String?
+  // National Provider Identifier. Structured (unlike the free-text licenseNumber)
+  // precisely so it can be matched against the public NPPES registry — see
+  // lib/verification. Any provider who bills insurance has one.
+  npi                  String?
+  // Last time the automated pre-approval checks ran (lib/verification).
+  checksRunAt          DateTime?
   verificationStatus   VerificationStatus   @default(PENDING)
   // Trust tier for the third-party marketplace (plan §4). Distinct from
   // verificationStatus (the approval gate): a business can be APPROVED yet only
@@ -111,6 +117,7 @@ model Business {
   favorites            Favorite[]
   reviews              Review[]
   services             Service[]
+  verificationChecks   VerificationCheck[]
 
   @@index([userId])
   @@index([zipCode])
@@ -399,10 +406,50 @@ enum AdminActionType {
   CATEGORY_RESTORED
   BUSINESS_BILLING_OVERRIDE
   BUSINESS_VERIFICATION_LEVEL
+  BUSINESS_CHECKS_RUN
   REPORT_RESOLVED
   RESOURCE_CREATED
   RESOURCE_UPDATED
   RESOURCE_ARCHIVED
+}
+
+// One row per automated pre-approval check per business (lib/verification). These are
+// evidence for the admin, never an automatic decision — approval stays manual.
+// Upserted on ([businessId, type]) so each business holds the CURRENT result of each
+// check; the history of who acted on them lives in AdminAction.
+model VerificationCheck {
+  id         String                  @id @default(cuid())
+  businessId String
+  type       VerificationCheckType
+  result     VerificationCheckResult
+  // One-line human-readable verdict rendered directly in the admin queue.
+  summary    String
+  // Raw evidence (matched NPPES record, geocoder response, duplicate ids, ...) so an
+  // admin can audit WHY a check passed without re-querying the external source.
+  details    Json?
+  checkedAt  DateTime                @default(now())
+  business   Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, type])
+  @@index([businessId])
+  @@index([result])
+}
+
+enum VerificationCheckType {
+  EMAIL_DOMAIN // account email vs. the business's own domain
+  WEBSITE // domain resolves, site is live, registration age
+  PHONE // NANP format/plausibility (see note in lib/verification/checks.ts)
+  ADDRESS // resolves against the US Census geocoder; not a PO box
+  DUPLICATE // collides with an existing business (phone/domain/address/NPI)
+  NPI // matches an active NPPES registry record
+}
+
+enum VerificationCheckResult {
+  PASS
+  WARN // suspicious but not disqualifying — admin should look
+  FAIL // contradicted by an authoritative source
+  SKIPPED // provider supplied nothing to check
+  ERROR // external source unavailable; says nothing about the provider
 }
 
 // Records every Stripe webhook event id we've fully processed, so retried/duplicate

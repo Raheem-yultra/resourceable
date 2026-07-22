@@ -106,6 +106,7 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
     // Business Details
     yearEstablished: business?.yearEstablished || '',
     licenseNumber: business?.licenseNumber || '',
+    npi: business?.npi || '',
     
     // Services & Disabilities — bind to DB slugs so selections round-trip correctly
     serviceTypes: business?.services?.[0]?.serviceTypes?.map((st: any) => st.serviceType?.slug).filter(Boolean) || [],
@@ -321,6 +322,31 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
                 onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="npi">NPI (National Provider Identifier)</Label>
+            <Input
+              id="npi"
+              inputMode="numeric"
+              maxLength={12}
+              placeholder="10 digits — e.g. 1234567893"
+              value={formData.npi}
+              onChange={(e) => setFormData({ ...formData, npi: e.target.value })}
+              aria-describedby="npi-help"
+            />
+            <p id="npi-help" className="text-xs text-muted-foreground">
+              Optional, but it&apos;s the fastest route to approval and the only way to reach the{' '}
+              <span className="font-medium">Licensed</span> badge — we verify it against the public{' '}
+              <a
+                href="https://npiregistry.cms.hhs.gov/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                CMS NPPES registry
+              </a>
+              . Any provider who bills insurance has one.
+            </p>
           </div>
         </CardContent>
       </Card>

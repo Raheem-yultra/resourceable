@@ -107,6 +107,8 @@ export const businessService = {
         zipCode: true,
         yearEstablished: true,
         licenseNumber: true,
+        npi: true,
+        checksRunAt: true,
         verificationStatus: true,
         isSuspended: true,
         suspendedAt: true,
@@ -138,6 +140,17 @@ export const businessService = {
                 slug: true,
               },
             },
+          },
+        },
+        // Automated pre-approval evidence (lib/verification) — rendered as a signal
+        // checklist so the admin adjudicates exceptions instead of investigating rows.
+        verificationChecks: {
+          select: {
+            type: true,
+            result: true,
+            summary: true,
+            details: true,
+            checkedAt: true,
           },
         },
       },

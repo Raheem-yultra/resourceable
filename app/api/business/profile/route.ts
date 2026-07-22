@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { businessService } from '@/services/business.service';
 import { businessProfileUpdateSchema } from '@/lib/validations';
 import { prisma } from '@/lib/prisma';
+import { runVerificationChecks } from '@/lib/verification';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,6 +69,7 @@ export async function PUT(req: NextRequest) {
         zipCode: orNull(data.zipCode),
         yearEstablished: data.yearEstablished ?? null,
         licenseNumber: orNull(data.licenseNumber),
+        npi: data.npi ?? null,
       },
       update: {
         businessName: data.businessName.trim(),
@@ -83,6 +85,7 @@ export async function PUT(req: NextRequest) {
         zipCode: orNull(data.zipCode),
         yearEstablished: data.yearEstablished ?? null,
         licenseNumber: orNull(data.licenseNumber),
+        npi: data.npi ?? null,
       },
     });
 
@@ -162,6 +165,19 @@ export async function PUT(req: NextRequest) {
           data: disabilities.map((d) => ({ businessId: business.id, disabilityId: d.id })),
           skipDuplicates: true,
         });
+      }
+    }
+
+    // Re-run the automated pre-approval checks so the admin queue always reflects what
+    // the provider just submitted. Only while PENDING — that's the gate these inform;
+    // for live providers an admin re-runs them on demand from the queue.
+    // Awaited (fire-and-forget is unreliable on serverless) but fully isolated: the
+    // checks are network-bound and must never fail or roll back the provider's save.
+    if (business.verificationStatus === 'PENDING') {
+      try {
+        await runVerificationChecks(business.id);
+      } catch (checkError) {
+        console.error('Verification checks failed for business', business.id, checkError);
       }
     }
 

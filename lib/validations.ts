@@ -85,6 +85,18 @@ export const businessProfileUpdateSchema = z
     zipCode: z.string().trim().optional(),
     yearEstablished: optionalNumber,
     licenseNumber: z.string().trim().optional(),
+    // Structured (unlike the free-text licenseNumber) so it can be matched against the
+    // public NPPES registry. Accept spaces/dashes as typed and normalize to 10 digits;
+    // the CMS check digit is validated in lib/verification, not here, so a typo surfaces
+    // to the admin as a failed check rather than blocking the provider's own save.
+    npi: z
+      .union([z.string().trim(), z.literal('')])
+      .optional()
+      .transform((v) => {
+        const digits = (v ?? '').replace(/\D/g, '');
+        return digits.length > 0 ? digits : undefined;
+      })
+      .refine((v) => v === undefined || v.length === 10, 'NPI must be 10 digits'),
     priceRange: z.nativeEnum(PriceRange).default(PriceRange.CONTACT),
     priceMin: optionalNumber,
     priceMax: optionalNumber,
