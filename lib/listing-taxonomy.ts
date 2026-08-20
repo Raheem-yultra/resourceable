@@ -120,6 +120,115 @@ export const LISTING_TYPES: ListingTypeMeta[] = [
   },
 ];
 
+/**
+ * Top-level browse categories — what a visitor sees in the nav and the tab bar.
+ *
+ * Deliberately NOT the same list as LISTING_TYPES. That one is the *provider*
+ * taxonomy: what you are creating when you add a listing, and it maps 1:1 to the
+ * ListingType enum. This one is the *visitor* taxonomy, and two entries do not
+ * correspond to a listing type at all:
+ *
+ *  - "21+" is an age attribute, not a type. A 21+ speech therapy is still a
+ *    Therapy. Modelling it as a ListingType would force each listing into exactly
+ *    one of {Therapy, 21+} and silently drop adult therapies out of the Therapies
+ *    tab. So it filters every type by age group instead, and correctly appears in
+ *    both places.
+ *  - "Events & Resources" spans two different models: Events are provider-created
+ *    bookable listings (priced, located, in the search index, subject to
+ *    verification and billing), while Resources are admin-authored articles with
+ *    no provider, price, or location. They are combined for the visitor, who does
+ *    not care which table a thing lives in, while staying separate underneath —
+ *    merging the data would drag editorial content into the paid provider index.
+ *
+ * Keeping the two taxonomies separate is what lets the visitor-facing grouping
+ * change without a migration or re-tagging a single listing.
+ */
+export interface BrowseCategory {
+  slug: string;
+  /** Nav / tab label. */
+  label: string;
+  /** Heading on the category's own page. */
+  title: string;
+  subtitle: string;
+  /** lucide-react icon name, resolved in the client where icons are imported. */
+  icon: string;
+  /** Narrow to one listing type, if this category maps to one. */
+  listingType?: BookableListingType;
+  /** Cross-cutting age filter, for categories that are a facet rather than a type. */
+  ageGroup?: 'INFANT' | 'TODDLER' | 'CHILD' | 'TEEN' | 'ADULT';
+  /** Also surface the Resources knowledge base on this category. */
+  includesResources?: boolean;
+}
+
+export const BROWSE_CATEGORIES: BrowseCategory[] = [
+  {
+    slug: 'services',
+    label: 'Services',
+    title: 'Services',
+    subtitle: 'Everyday services from verified providers near you.',
+    icon: 'Stethoscope',
+    listingType: 'SERVICE',
+  },
+  {
+    slug: 'therapies',
+    label: 'Therapies',
+    title: 'Therapies',
+    subtitle: 'Speech, occupational, behavioural and other therapies near you.',
+    icon: 'HeartHandshake',
+    listingType: 'THERAPY',
+  },
+  {
+    slug: 'shop',
+    label: 'Shop',
+    title: 'Shop',
+    subtitle: 'Adaptive equipment, sensory tools, and assistive products.',
+    icon: 'ShoppingBag',
+    listingType: 'SHOP',
+  },
+  {
+    slug: 'school',
+    label: 'School',
+    title: 'School',
+    subtitle: 'Special education, inclusive programs, tutoring, and transition support.',
+    icon: 'GraduationCap',
+    listingType: 'SCHOOL',
+  },
+  {
+    slug: 'events-resources',
+    label: 'Events & Resources',
+    title: 'Events & Resources',
+    subtitle:
+      'Support groups, workshops and camps to attend — plus free guides, benefits information, and crisis directories.',
+    icon: 'CalendarDays',
+    listingType: 'EVENT',
+    includesResources: true,
+  },
+  {
+    slug: '21-plus',
+    label: '21+',
+    title: '21+ / Transition-Age',
+    subtitle:
+      'Adult and transition-age services, therapies, programs, and events across every category.',
+    icon: 'UserRound',
+    ageGroup: 'ADULT',
+  },
+];
+
+const BY_CATEGORY_SLUG = new Map(BROWSE_CATEGORIES.map((c) => [c.slug, c]));
+
+export function browseCategoryBySlug(slug: string): BrowseCategory | undefined {
+  return BY_CATEGORY_SLUG.get(slug);
+}
+
+/**
+ * Legacy slugs that used to be their own category, mapped to where they live now.
+ * Kept so existing links, bookmarks, and anything already indexed keep working
+ * instead of 404-ing.
+ */
+export const CATEGORY_SLUG_REDIRECTS: Record<string, string> = {
+  events: 'events-resources',
+};
+
 /** Topic tags for the Resources knowledge base (plan §2.2 / §6). */
 export const RESOURCE_TOPICS = [
   'Benefits & Legal Rights',
@@ -138,12 +247,7 @@ export const AGE_GROUP_OPTIONS = [
   { value: '21+', label: '21+' },
 ] as const;
 
-const BY_SLUG = new Map(LISTING_TYPES.map((t) => [t.slug, t]));
 const BY_TYPE = new Map(LISTING_TYPES.map((t) => [t.type, t]));
-
-export function listingTypeBySlug(slug: string): ListingTypeMeta | undefined {
-  return BY_SLUG.get(slug);
-}
 
 export function listingTypeMeta(type: ListingType | BookableListingType): ListingTypeMeta | undefined {
   return BY_TYPE.get(type as BookableListingType);

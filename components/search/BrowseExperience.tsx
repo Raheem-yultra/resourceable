@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
-  Search, X, Filter,
-  LayoutGrid, Stethoscope, HeartHandshake, ShoppingBag, GraduationCap, CalendarDays,
+  Search, X, Filter, BookOpen, ExternalLink,
+  LayoutGrid, Stethoscope, HeartHandshake, ShoppingBag, GraduationCap, CalendarDays, UserRound,
 } from 'lucide-react';
 import { SearchFilters } from '@/components/search/SearchFilters';
 import { ServiceList } from '@/components/search/ServiceList';
@@ -13,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import { LiabilityDisclaimer } from '@/components/listing/LiabilityDisclaimer';
-import { LISTING_TYPES, type BookableListingType } from '@/lib/listing-taxonomy';
+import { BROWSE_CATEGORIES, type BrowseCategory } from '@/lib/listing-taxonomy';
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from '@/components/ui/sheet';
@@ -29,14 +30,21 @@ interface ActiveFilters {
 }
 
 const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  Stethoscope, HeartHandshake, ShoppingBag, GraduationCap, CalendarDays,
+  Stethoscope, HeartHandshake, ShoppingBag, GraduationCap, CalendarDays, UserRound,
 };
 
+interface ResourceCard {
+  id: string;
+  title: string;
+  slug: string;
+  summary: string | null;
+  topicTags: string[];
+  externalUrl: string | null;
+}
+
 export interface BrowseExperienceProps {
-  /** Pre-select a listing-type tab. Omit for the unified "All" view. */
-  initialListingType?: BookableListingType;
-  /** Pre-apply an age-group filter (used by the /browse/21-plus landing page). */
-  initialAgeGroup?: string;
+  /** Pre-select a browse category. Omit for the unified "All" view. */
+  initialCategory?: BrowseCategory;
   /** Page heading. */
   title?: string;
   /** Short intro line under the heading. */
@@ -54,8 +62,7 @@ export interface BrowseExperienceProps {
  * (only the type changes), matching plan §7.2's "filter state loss" guardrail.
  */
 export function BrowseExperience({
-  initialListingType,
-  initialAgeGroup,
+  initialCategory,
   title = 'Find Disability Services',
   subtitle,
   syncUrl = false,
@@ -74,7 +81,10 @@ export function BrowseExperience({
   const [totalResults, setTotalResults] = useState(0);
   const [sortBy, setSortBy] = useState<SortOption>('relevance');
   const [showFilters, setShowFilters] = useState(false);
-  const [listingType, setListingType] = useState<BookableListingType | undefined>(initialListingType);
+  const [category, setCategory] = useState<BrowseCategory | undefined>(initialCategory);
+  // Resources live in a different table from listings, so the combined
+  // "Events & Resources" category loads them alongside rather than through search.
+  const [resources, setResources] = useState<ResourceCard[]>([]);
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
     disabilities: [],
     serviceTypes: [],
@@ -83,7 +93,7 @@ export function BrowseExperience({
   });
 
   const buildParams = useCallback(
-    (filters: any, type: BookableListingType | undefined) => {
+    (filters: any, cat: BrowseCategory | undefined) => {
       const params = new URLSearchParams();
       if (filters.query) params.append('query', filters.query);
       if (filters.zipCode) params.append('zipCode', filters.zipCode);
@@ -92,16 +102,18 @@ export function BrowseExperience({
       (filters.serviceTypes || []).forEach((s: { id: string }) => params.append('serviceTypeId', s.id));
       if (filters.priceMin !== undefined) params.append('priceMin', filters.priceMin.toString());
       if (filters.priceMax !== undefined) params.append('priceMax', filters.priceMax.toString());
-      if (type) params.append('listingType', type);
-      if (initialAgeGroup) params.append('ageGroup', initialAgeGroup);
+      // A category narrows by listing type, by age group, or by neither — see the
+      // BROWSE_CATEGORIES comment on why those are not the same axis.
+      if (cat?.listingType) params.append('listingType', cat.listingType);
+      if (cat?.ageGroup) params.append('ageGroup', cat.ageGroup);
       params.append('sortBy', filters.sortBy || sortBy);
       return params;
     },
-    [initialAgeGroup, sortBy]
+    [sortBy]
   );
 
   const handleSearch = useCallback(
-    async (filters: any, type: BookableListingType | undefined = listingType) => {
+    async (filters: any, cat: BrowseCategory | undefined = category) => {
       const reqId = ++reqIdRef.current;
       const isCurrent = () => reqId === reqIdRef.current;
       setLoading(true);
@@ -115,7 +127,7 @@ export function BrowseExperience({
       const timeout = setTimeout(() => controller.abort(), 15000);
 
       try {
-        const params = buildParams(filters, type);
+        const params = buildParams(filters, cat);
         const response = await fetch(`/api/search?${params.toString()}`, { signal: controller.signal });
         if (!isCurrent()) return; // a newer search superseded this one
         if (response.ok) {
@@ -161,7 +173,7 @@ export function BrowseExperience({
         if (isCurrent()) setLoading(false);
       }
     },
-    [buildParams, listingType]
+    [buildParams, category]
   );
 
   // Initial load + re-search on sort change.
@@ -170,12 +182,29 @@ export function BrowseExperience({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy]);
 
-  const selectType = (type: BookableListingType | undefined) => {
-    setListingType(type);
-    handleSearch({ query: searchQuery, ...activeFilters }, type);
+  // Load the knowledge base only for categories that surface it, and only once
+  // per visit — resources are editorial and don't change between searches.
+  useEffect(() => {
+    if (!category?.includesResources || resources.length > 0) return;
+    let cancelled = false;
+    fetch('/api/resources?limit=6')
+      .then((r) => (r.ok ? r.json() : { resources: [] }))
+      .then((d) => {
+        if (!cancelled) setResources(d.resources || []);
+      })
+      .catch(() => {
+        // Non-fatal: the listings half of the category still works without it.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [category, resources.length]);
+
+  const selectCategory = (next: BrowseCategory | undefined) => {
+    setCategory(next);
+    handleSearch({ query: searchQuery, ...activeFilters }, next);
     if (syncUrl) {
-      const meta = LISTING_TYPES.find((t) => t.type === type);
-      router.replace(meta ? `/browse/${meta.slug}` : '/browse');
+      router.replace(next ? `/browse/${next.slug}` : '/browse');
     }
   };
 
@@ -212,20 +241,20 @@ export function BrowseExperience({
             <div className="mb-4 overflow-x-auto -mx-1 px-1" role="tablist" aria-label="Listing types">
               <div className="flex gap-2 min-w-max pb-1">
                 <TabButton
-                  active={!listingType}
+                  active={!category}
                   icon={<LayoutGrid className="h-4 w-4" aria-hidden="true" />}
                   label="All"
-                  onClick={() => selectType(undefined)}
+                  onClick={() => selectCategory(undefined)}
                 />
-                {LISTING_TYPES.map((t) => {
-                  const Icon = TAB_ICONS[t.icon] || LayoutGrid;
+                {BROWSE_CATEGORIES.map((c) => {
+                  const Icon = TAB_ICONS[c.icon] || LayoutGrid;
                   return (
                     <TabButton
-                      key={t.type}
-                      active={listingType === t.type}
+                      key={c.slug}
+                      active={category?.slug === c.slug}
                       icon={<Icon className="h-4 w-4" aria-hidden="true" />}
-                      label={t.label}
-                      onClick={() => selectType(t.type)}
+                      label={c.label}
+                      onClick={() => selectCategory(c)}
                     />
                   );
                 })}
@@ -370,6 +399,54 @@ export function BrowseExperience({
               <ServiceList services={services} />
             )}
           </div>
+
+          {/* The other half of the combined category. Rendered as its own band so
+              it reads as a distinct kind of thing — free, no provider, nothing to
+              book — rather than as more search results. */}
+          {category?.includesResources && resources.length > 0 && (
+            <section aria-labelledby="resources-heading" className="mt-10 border-t border-border/60 pt-8">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 id="resources-heading" className="flex items-center gap-2 text-lg sm:text-xl font-semibold">
+                    <BookOpen className="h-5 w-5 text-primary" aria-hidden="true" />
+                    Free resources
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Guides, benefits information, and crisis directories — no account needed.
+                  </p>
+                </div>
+                <Link
+                  href="/resources"
+                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  All resources
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {resources.map((r) => {
+                  const isExternal = !!r.externalUrl;
+                  return (
+                    <Link
+                      key={r.id}
+                      href={isExternal ? r.externalUrl! : `/resources/${r.slug}`}
+                      {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                      className="block rounded-lg border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md"
+                    >
+                      <h3 className="mb-1 flex items-start gap-1.5 text-sm font-semibold leading-tight">
+                        <span className="min-w-0">{r.title}</span>
+                        {isExternal && (
+                          <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                        )}
+                      </h3>
+                      {r.summary && (
+                        <p className="line-clamp-2 text-sm text-muted-foreground">{r.summary}</p>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           <LiabilityDisclaimer className="mt-8" />
         </section>

@@ -130,10 +130,18 @@ Nav: Browse ▾        School        Events        Resources
 /browse/therapies
 /browse/shop
 /browse/school
-/browse/events
+/browse/events-resources   → Events listings + the Resources knowledge base, one category
+/browse/events             → 301 to /browse/events-resources (was its own category)
 /browse/21-plus            → pre-filtered cross-category view
-/resources                 → separate search/browse experience (topic-based)
+/resources                 → still the full topic-based knowledge base (deep link)
 ```
+
+> **Visitor categories vs. provider listing types.** `BROWSE_CATEGORIES` (nav +
+> tabs) is deliberately not `LISTING_TYPES` (the `ListingType` enum a provider
+> picks when creating a listing). Two visitor categories have no listing type of
+> their own: **21+** is an age filter applied across every type, and **Events &
+> Resources** spans two tables. Keeping the taxonomies separate is what lets the
+> visitor-facing grouping change without a migration or re-tagging listings.
 
 ---
 

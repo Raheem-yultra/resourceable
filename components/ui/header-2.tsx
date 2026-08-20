@@ -17,9 +17,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-// Marketplace nav (plan §5). "Browse" groups the three provider/product-finding
-// flows (Services, Therapies, Shop) that users naturally bounce between; School,
-// Events, and Resources stay top-level as conceptually distinct destinations.
+// Marketplace nav (plan §5). "Browse" groups the provider/product-finding flows
+// (Services, Therapies, Shop) that users naturally bounce between; the remaining
+// categories stay top-level as conceptually distinct destinations.
+//
+// Events and Resources are ONE entry: a family looking for local help does not
+// think "is a support group a listing or an article?" — they want both in one
+// place. The two still come from different tables; only the category is shared.
+// "21+" is likewise a category here but an age filter underneath, so an adult
+// therapy shows up under both Therapies and 21+.
 const BROWSE_LINKS = [
   { label: 'All listings', href: '/browse' },
   { label: 'Services', href: '/browse/services' },
@@ -28,8 +34,8 @@ const BROWSE_LINKS = [
 ];
 const TOP_LEVEL_MARKETPLACE = [
   { label: 'School', href: '/browse/school' },
-  { label: 'Events', href: '/browse/events' },
-  { label: 'Resources', href: '/resources' },
+  { label: 'Events & Resources', href: '/browse/events-resources' },
+  { label: '21+', href: '/browse/21-plus' },
 ];
 
 export function Header() {
