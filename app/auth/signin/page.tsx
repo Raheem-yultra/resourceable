@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Lock, LogIn } from 'lucide-react';
+import { Mail, Lock, LogIn, RefreshCw } from 'lucide-react';
 
 export default function SignInPage() {
   const router = useRouter();
@@ -20,12 +20,16 @@ export default function SignInPage() {
     password: '',
   });
   const [error, setError] = useState('');
+  // Set when sign-in failed specifically because the email isn't verified, so we
+  // can offer the resend link instead of a dead-end "invalid credentials".
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setNeedsVerification(false);
 
     // Inline field validation before hitting the network
     const fe: { email?: string; password?: string } = {};
@@ -45,7 +49,19 @@ export default function SignInPage() {
       });
 
       if (result?.error) {
-        setError('Invalid email or password');
+        // NextAuth passes the message thrown by `authorize` through as
+        // result.error. lib/auth.ts only reaches the account-state checks AFTER
+        // the password is verified, so echoing those two is safe — it can't be
+        // used to enumerate accounts. Anything else stays deliberately vague.
+        const reason = result.error;
+        if (/verify your email/i.test(reason)) {
+          setNeedsVerification(true);
+          setError(reason);
+        } else if (/deactivated/i.test(reason)) {
+          setError(reason);
+        } else {
+          setError('Invalid email or password');
+        }
         setLoading(false);
         return;
       }
@@ -146,7 +162,16 @@ export default function SignInPage() {
             {/* Error Message */}
             {error && (
               <div className="p-3 text-sm theme-danger" role="alert">
-                {error}
+                <p>{error}</p>
+                {needsVerification && (
+                  <Link
+                    href={`/auth/verify-email?email=${encodeURIComponent(formData.email)}`}
+                    className="mt-2 inline-flex items-center gap-1.5 font-medium text-primary underline underline-offset-4 hover:no-underline"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+                    Resend verification email
+                  </Link>
+                )}
               </div>
             )}
 

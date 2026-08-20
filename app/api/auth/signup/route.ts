@@ -6,6 +6,7 @@ import { sendVerificationEmail } from '@/lib/email';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
+import { getAppBaseUrl } from '@/lib/env';
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,8 +51,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Send verification email
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const verificationUrl = `${baseUrl}/auth/verify-email?token=${verificationToken}`;
+    const verificationUrl = `${getAppBaseUrl()}/auth/verify-email?token=${verificationToken}`;
 
     try {
       await sendVerificationEmail({

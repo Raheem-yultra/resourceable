@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { getEmailFrom, getSupportEmail } from '@/lib/env';
 
 // Lazy initialization to avoid build-time errors when env var is not available
 let resend: Resend | null = null;
@@ -10,9 +11,9 @@ function getResendClient(): Resend {
   return resend;
 }
 
-// Sender + support reply-to are env-configurable (were hardcoded to a personal Gmail before).
-const FROM_EMAIL = process.env.EMAIL_FROM || 'ResourceAble <onboarding@resend.dev>';
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@resourceable.com';
+// Sender + support reply-to come from lib/env, which refuses to fall back to the
+// Resend sandbox sender in production. Called per-send rather than frozen into a
+// module constant at import time.
 
 // HTML escape function to prevent XSS in emails
 function escapeHtml(text: string): string {
@@ -73,9 +74,13 @@ export async function sendContactInquiryEmail({
     const safeMessage = escapeHtml(message);
     
     const { data, error } = await getResendClient().emails.send({
-      from: FROM_EMAIL,
+      from: getEmailFrom(),
       to: businessEmail,
-      replyTo: SUPPORT_EMAIL,
+      // Reply-To is the CUSTOMER, not support: the whole point of this email is
+      // that the provider hits Reply and reaches the family directly. Pointing it
+      // at the support inbox silently breaks that hand-off. Note this is the raw
+      // address, not the HTML-escaped copy — it's a header, not markup.
+      replyTo: customerEmail,
       subject: `New Customer Inquiry - ${safeService}`,
       html: `
         <!DOCTYPE html>
@@ -223,9 +228,9 @@ export async function sendCustomerConfirmationEmail({
     const safeWebsite = businessWebsite ? escapeHtml(businessWebsite) : '';
     
     const { data, error } = await getResendClient().emails.send({
-      from: FROM_EMAIL,
+      from: getEmailFrom(),
       to: customerEmail,
-      replyTo: SUPPORT_EMAIL,
+      replyTo: getSupportEmail(),
       subject: `We've contacted ${safeBusiness} on your behalf`,
       html: `
         <!DOCTYPE html>
@@ -372,9 +377,9 @@ export async function sendPasswordResetEmail({
     const safeName = escapeHtml(name);
     
     const { data, error } = await getResendClient().emails.send({
-      from: FROM_EMAIL,
+      from: getEmailFrom(),
       to: email,
-      replyTo: SUPPORT_EMAIL,
+      replyTo: getSupportEmail(),
       subject: 'Reset Your Password - ResourceAble',
       html: `
         <!DOCTYPE html>
@@ -478,6 +483,105 @@ Thank you for using ResourceAble - Helping connect families with disability serv
   }
 }
 
+// Password change confirmation
+interface PasswordChangedEmailProps {
+  email: string;
+  name: string;
+  /** When the change happened. Defaults to now. */
+  changedAt?: Date;
+  /** Link the user follows to re-secure the account if this wasn't them. */
+  resetUrl: string;
+}
+
+/**
+ * Sent AFTER a password is successfully changed. This is a security notice, not
+ * a courtesy: it is how a user finds out about an account takeover they didn't
+ * initiate, so it must never be suppressed or batched.
+ */
+export async function sendPasswordChangedEmail({
+  email,
+  name,
+  changedAt,
+  resetUrl,
+}: PasswordChangedEmailProps) {
+  try {
+    const safeName = escapeHtml(name || 'there');
+    const when = (changedAt ?? new Date()).toLocaleString('en-US', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+      timeZone: 'UTC',
+    });
+    const safeWhen = escapeHtml(`${when} UTC`);
+    const safeSupport = escapeHtml(getSupportEmail());
+
+    const { data, error } = await getResendClient().emails.send({
+      from: getEmailFrom(),
+      to: email,
+      replyTo: getSupportEmail(),
+      subject: 'Your ResourceAble password was changed',
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="background: linear-gradient(135deg, #0e7490 0%, #0369a1 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="margin:0;">Password Changed</h1>
+              </div>
+              <div style="background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
+                <p>Hello ${safeName},</p>
+                <p>The password for your ResourceAble account was changed on <strong>${safeWhen}</strong>.</p>
+                <p>If you made this change, no action is needed.</p>
+                <div style="background: #fef3c7; border: 1px solid #fbbf24; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                  <p style="margin: 0 0 10px 0;"><strong>Didn't change your password?</strong></p>
+                  <p style="margin: 0;">Someone else may have access to your account. Reset your password immediately and contact us at
+                    <a href="mailto:${safeSupport}" style="color: #0e7490;">${safeSupport}</a>.</p>
+                </div>
+                <p style="text-align: center;">
+                  <a href="${resetUrl}" style="display: inline-block; background: #0e7490; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold;">Reset My Password</a>
+                </p>
+                <p style="font-size: 13px; color: #6b7280;">Or paste this link into your browser:<br>${resetUrl}</p>
+              </div>
+              <div style="background: #f3f4f6; padding: 20px; text-align: center; color: #6b7280; font-size: 14px; border-radius: 0 0 10px 10px;">
+                <p style="margin:0;">ResourceAble &copy; ${new Date().getFullYear()}</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `.trim(),
+      text: `
+Hello ${name || 'there'},
+
+The password for your ResourceAble account was changed on ${when} UTC.
+
+If you made this change, no action is needed.
+
+DIDN'T CHANGE YOUR PASSWORD?
+Someone else may have access to your account. Reset your password immediately
+and contact us at ${getSupportEmail()}.
+
+Reset your password: ${resetUrl}
+
+---
+Thank you for using ResourceAble - Helping connect families with disability services.
+      `.trim(),
+    });
+
+    if (error) {
+      console.error('Resend password changed error:', error);
+      throw new Error('Failed to send password changed email');
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Password changed email failed:', error);
+    throw error;
+  }
+}
+
 // Email Verification
 interface EmailVerificationProps {
   email: string;
@@ -495,7 +599,7 @@ export async function sendVerificationEmail({
     const safeEmail = escapeHtml(email);
 
     const { data, error } = await getResendClient().emails.send({
-      from: FROM_EMAIL,
+      from: getEmailFrom(),
       to: email,
       subject: 'Verify your email - ResourceAble',
       html: `
@@ -649,9 +753,9 @@ function adminNotificationHtml(opts: {
 export async function sendBusinessSuspendedEmail({ email, name, businessName, reason }: AdminNotificationProps) {
   const safeBusiness = escapeHtml(businessName);
   const { error } = await getResendClient().emails.send({
-    from: FROM_EMAIL,
+    from: getEmailFrom(),
     to: email,
-    replyTo: SUPPORT_EMAIL,
+    replyTo: getSupportEmail(),
     subject: 'Your ResourceAble Business Has Been Suspended',
     html: adminNotificationHtml({
       accent: '#f97316',
@@ -672,9 +776,9 @@ export async function sendBusinessSuspendedEmail({ email, name, businessName, re
 export async function sendBusinessUnsuspendedEmail({ email, name, businessName }: AdminNotificationProps) {
   const safeBusiness = escapeHtml(businessName);
   const { error } = await getResendClient().emails.send({
-    from: FROM_EMAIL,
+    from: getEmailFrom(),
     to: email,
-    replyTo: SUPPORT_EMAIL,
+    replyTo: getSupportEmail(),
     subject: 'Your ResourceAble Business Has Been Reinstated',
     html: adminNotificationHtml({
       accent: '#0e7490',
@@ -694,9 +798,9 @@ export async function sendBusinessUnsuspendedEmail({ email, name, businessName }
 export async function sendBusinessRemovedEmail({ email, name, businessName, reason }: AdminNotificationProps) {
   const safeBusiness = escapeHtml(businessName);
   const { error } = await getResendClient().emails.send({
-    from: FROM_EMAIL,
+    from: getEmailFrom(),
     to: email,
-    replyTo: SUPPORT_EMAIL,
+    replyTo: getSupportEmail(),
     subject: 'Your ResourceAble Business Has Been Removed',
     html: adminNotificationHtml({
       accent: '#dc2626',
@@ -764,9 +868,9 @@ function billingHtml(opts: {
 export async function sendProviderApprovedBillingEmail({ email, name, businessName, actionUrl }: BillingEmailProps) {
   const safeBusiness = escapeHtml(businessName);
   const { error } = await getResendClient().emails.send({
-    from: FROM_EMAIL,
+    from: getEmailFrom(),
     to: email,
-    replyTo: SUPPORT_EMAIL,
+    replyTo: getSupportEmail(),
     subject: `${businessName} is approved — start your 30-day free trial`,
     html: billingHtml({
       accent: '#0e7490',
@@ -790,9 +894,9 @@ export async function sendTrialEndingEmail({ email, name, businessName, actionUr
   const safeBusiness = escapeHtml(businessName);
   const when = trialEndsAt ? escapeHtml(trialEndsAt.toLocaleDateString()) : 'soon';
   const { error } = await getResendClient().emails.send({
-    from: FROM_EMAIL,
+    from: getEmailFrom(),
     to: email,
-    replyTo: SUPPORT_EMAIL,
+    replyTo: getSupportEmail(),
     subject: 'Your ResourceAble free trial is ending soon',
     html: billingHtml({
       accent: '#f97316',
@@ -815,9 +919,9 @@ export async function sendTrialEndingEmail({ email, name, businessName, actionUr
 export async function sendPaymentFailedEmail({ email, name, businessName, actionUrl }: BillingEmailProps) {
   const safeBusiness = escapeHtml(businessName);
   const { error } = await getResendClient().emails.send({
-    from: FROM_EMAIL,
+    from: getEmailFrom(),
     to: email,
-    replyTo: SUPPORT_EMAIL,
+    replyTo: getSupportEmail(),
     subject: 'Action needed: payment failed for your ResourceAble subscription',
     html: billingHtml({
       accent: '#dc2626',

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
+import { getAppBaseUrl } from '@/lib/env';
 
 export async function GET(req: NextRequest) {
   try {
@@ -56,6 +58,11 @@ export async function GET(req: NextRequest) {
 // Resend verification email
 export async function POST(req: NextRequest) {
   try {
+    // Unauthenticated and sends mail to a caller-supplied address, so it's the
+    // same mail-bomb vector as signup/forgot-password and gets the same throttle.
+    const rl = rateLimit(`verify-resend:${clientIp(req)}`, 5, 15 * 60_000);
+    if (!rl.allowed) return tooManyRequests(rl.retryAfterSeconds);
+
     const { email } = await req.json();
 
     if (!email) {
@@ -100,8 +107,7 @@ export async function POST(req: NextRequest) {
 
     // Send verification email
     const { sendVerificationEmail } = await import('@/lib/email');
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const verificationUrl = `${baseUrl}/auth/verify-email?token=${verificationToken}`;
+    const verificationUrl = `${getAppBaseUrl()}/auth/verify-email?token=${verificationToken}`;
 
     await sendVerificationEmail({
       email: user.email,

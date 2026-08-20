@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
+import { sendPasswordChangedEmail } from '@/lib/email';
+import { getAppBaseUrl } from '@/lib/env';
 
 export async function POST(req: NextRequest) {
   try {
@@ -55,6 +57,20 @@ export async function POST(req: NextRequest) {
         resetTokenExpiry: null,
       },
     });
+
+    // Security notice — this is how a user learns about a takeover they didn't
+    // initiate. Non-fatal: the password is already changed, so a mail outage must
+    // not make the reset look like it failed and send them round again.
+    try {
+      await sendPasswordChangedEmail({
+        email: user.email,
+        name: user.name || 'User',
+        changedAt: new Date(),
+        resetUrl: `${getAppBaseUrl()}/auth/forgot-password`,
+      });
+    } catch (emailError) {
+      console.error('Failed to send password changed email:', emailError);
+    }
 
     return NextResponse.json({
       message: 'Password reset successful. You can now sign in with your new password.',

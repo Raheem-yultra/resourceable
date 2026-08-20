@@ -90,6 +90,53 @@ Local development uses `.env.local`. **Never commit real values** — only
 4. Set `SUPPORT_EMAIL` to a real inbox you monitor — suspension/billing emails
    use it as reply-to.
 
+Verify with `npm run preflight`, which checks the key, lists every domain in the
+account with its verification status, and confirms the `EMAIL_FROM` domain is
+among the verified ones. It sends nothing.
+
+### 4a. While the sending domain is not yet yours
+
+Until the domain is transferred and verified, **leave `EMAIL_FROM` unset.** The
+app then falls back to Resend's shared sandbox sender
+(`ResourceAble <onboarding@resend.dev>`), which the API accepts but which only
+delivers to your own Resend account address and `@resend.dev` test inboxes.
+
+That is a working development posture and a **non-shippable production one**:
+
+- Do NOT point `EMAIL_FROM` at the domain before Resend reports `verified` —
+  sends fail with `403 The <domain> domain is not verified`, which is strictly
+  worse than the sandbox fallback.
+- Do NOT deploy to production in this state. `getEmailFrom()` in `lib/env.ts`
+  throws when `EMAIL_FROM` is unset and `NODE_ENV=production`, precisely so this
+  cannot ship silently. Email failures are caught as non-fatal by every caller,
+  so users still get accounts — but nothing is delivered and the log fills with
+  the error.
+
+**The switch, once the domain lands (in this order):**
+
+1. Add the domain in Resend → publish the SPF + DKIM records at the DNS provider.
+2. Wait for Resend to report `verified` (`npm run preflight` will confirm).
+3. Set `EMAIL_FROM="ResourceAble <no-reply@yourdomain.com>"` and `SUPPORT_EMAIL`.
+4. Set `NEXTAUTH_URL` to the final `https://` origin.
+5. Re-run `npm run preflight -- --env` against the deployment environment.
+6. Redeploy — env changes do not apply to already-built deployments.
+
+### 4b. What the app sends
+
+| Trigger | Recipient | Blocking? |
+|---|---|---|
+| Signup | New user | No — signup succeeds even if mail fails |
+| Resend verification (`/auth/verify-email`) | User | No |
+| Forgot password | User | No |
+| **Password successfully changed** | User | No — security notice; how a user learns of a takeover |
+| Contact form | Provider (Reply-To = the customer) + customer | No |
+| Admin suspend / unsuspend / remove | Provider owner | No |
+| Provider approved | Provider owner | No |
+| Trial ending / payment failed (Stripe webhook) | Provider owner | No |
+
+Every send is non-fatal by design: a mail outage must never make a signup,
+password reset, or admin action appear to have failed.
+
 ---
 
 ## 5. Billing (Stripe)
@@ -136,8 +183,14 @@ and use the `whsec_...` it prints as your local `STRIPE_WEBHOOK_SECRET`.
 2. Add **all** environment variables from step 2 to the Production environment
    (and Preview, if you want working preview deploys — point previews at a
    separate database, never production).
-3. Deploy (`git push` to `main` auto-deploys).
-4. **(one-time)** Add your custom domain: Project → Settings → Domains → follow
+3. **Before deploying, gate on the preflight.** It validates every required
+   variable and makes live read-only checks against Resend, Stripe, and the
+   database; it exits non-zero if anything would break:
+   ```bash
+   npm run preflight -- --env
+   ```
+4. Deploy (`git push` to `main` auto-deploys).
+5. **(one-time)** Add your custom domain: Project → Settings → Domains → follow
    the DNS instructions. Then update `NEXTAUTH_URL` to the final domain and
    **redeploy** (env changes don't apply to already-built deployments).
 
@@ -164,7 +217,8 @@ and use the `whsec_...` it prints as your local `STRIPE_WEBHOOK_SECRET`.
    - [ ] `/resources` shows seeded articles.
 3. **Forgot-password flow:** request a reset on the live domain and confirm the
    email link opens `https://yourdomain.com/auth/reset-password?...`
-   (wrong `NEXTAUTH_URL` shows up here first).
+   (wrong `NEXTAUTH_URL` shows up here first). Completing the reset must also
+   deliver a "Your ResourceAble password was changed" notice.
 
 ---
 

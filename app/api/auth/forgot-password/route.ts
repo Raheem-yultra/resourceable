@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { sendPasswordResetEmail } from '@/lib/email';
 import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
+import { getAppBaseUrl } from '@/lib/env';
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,13 +47,20 @@ export async function POST(req: NextRequest) {
     });
 
     // Send email with reset link
-    const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${resetToken}`;
+    const resetUrl = `${getAppBaseUrl()}/auth/reset-password?token=${resetToken}`;
     
-    await sendPasswordResetEmail({
-      email: user.email,
-      name: user.name || 'User',
-      resetUrl,
-    });
+    // A provider outage must not 500 here: the token is already persisted, and a
+    // failure that surfaces only for real accounts would leak which emails exist.
+    // Log it and return the same generic message either way — the user can retry.
+    try {
+      await sendPasswordResetEmail({
+        email: user.email,
+        name: user.name || 'User',
+        resetUrl,
+      });
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+    }
 
     return NextResponse.json({
       message: 'If an account exists with this email, you will receive a password reset link.',

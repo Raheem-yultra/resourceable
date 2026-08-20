@@ -39,4 +39,5 @@ export const getStripePriceId = (): string => requiredEnv('STRIPE_PRICE_ID');
 export const getStripeWebhookSecret = (): string => requiredEnv('STRIPE_WEBHOOK_SECRET');
 
 /** Base URL for Checkout / Customer Portal redirects. Reuses the existing app URL env. */
-export const getAppBaseUrl = (): string => process.env.NEXTAUTH_URL || 'http://localhost:3000';
+// Re-exported from lib/env so there is exactly one definition of the app origin.
+export { getAppBaseUrl } from '@/lib/env';
