@@ -6,19 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tag, Stethoscope, HeartHandshake, ShoppingBag, GraduationCap, CalendarDays } from 'lucide-react';
-import { LISTING_TYPES, type BookableListingType } from '@/lib/listing-taxonomy';
+import { LISTING_TYPES, AGE_GROUPS, type BookableListingType } from '@/lib/listing-taxonomy';
 
 const LISTING_TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   Stethoscope, HeartHandshake, ShoppingBag, GraduationCap, CalendarDays,
 };
-const AGE_GROUPS = [
-  { value: 'INFANT', label: 'Infant (0–2)' },
-  { value: 'TODDLER', label: 'Toddler (2–5)' },
-  { value: 'CHILD', label: 'Child (5–12)' },
-  { value: 'TEEN', label: 'Teen (12–18)' },
-  { value: 'ADULT', label: 'Adult (18+)' },
-  { value: 'ALL_AGES', label: 'All Ages' },
-];
+// Age groups come from the shared taxonomy so the provider's options and the
+// family's filter chips can never drift apart.
 const PRICE_RANGES = [
   { value: 'FREE', label: 'Free' },
   { value: 'LOW', label: '$ — Budget' },
@@ -194,7 +188,11 @@ export function ListingForm({ listing, onSaved, onCancel }: ListingFormProps) {
 
       {/* Age groups */}
       <div className="space-y-2">
-        <Label>Age groups</Label>
+        <Label>Who is this for?</Label>
+        <p className="text-xs text-muted-foreground">
+          Pick every age you serve — families filter by this, so a listing with none
+          set will not appear when someone narrows by age.
+        </p>
         <div className="flex flex-wrap gap-2">
           {AGE_GROUPS.map((a) => (
             <button

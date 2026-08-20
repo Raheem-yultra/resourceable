@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { billingVisibleFilter } from '@/lib/billing';
+import { ageGroupFilterValues } from '@/lib/listing-taxonomy';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +19,11 @@ const searchParamsSchema = z.object({
   priceMin: z.number().min(0).max(100000).optional(),
   priceMax: z.number().min(0).max(100000).optional(),
   priceRange: z.enum(['FREE', 'LOW', 'MEDIUM', 'HIGH', 'PREMIUM', 'CONTACT']).optional(),
-  ageGroup: z.enum(['INFANT', 'TODDLER', 'CHILD', 'TEEN', 'ADULT', 'ALL_AGES']).optional(),
+  // Repeatable: ?ageGroup=CHILD&ageGroup=TEEN. A single value still works, which
+  // is what the 21+ browse category sends.
+  ageGroups: z.array(z.enum(['INFANT', 'TODDLER', 'CHILD', 'TEEN', 'ADULT', 'ALL_AGES'])).optional(),
   // Category-expansion: restrict to one bookable listing type (browse tabs).
-  // Omitted = unified "All" search across every type (plan §5 / §7.1).
+  // Omitted = unified "All" search across every type (plan Â§5 / Â§7.1).
   listingType: z.enum(['SERVICE', 'THERAPY', 'SHOP', 'SCHOOL', 'EVENT']).optional(),
   // Only show listings from BASIC_VERIFIED / LICENSED providers.
   verifiedOnly: z.boolean().optional(),
@@ -57,6 +60,7 @@ export async function GET(req: NextRequest) {
     // Handle multiple disability/serviceType IDs
     const disabilityIds = searchParams.getAll('disabilityId');
     const serviceTypeIds = searchParams.getAll('serviceTypeId');
+    const ageGroups = searchParams.getAll('ageGroup');
     const insuranceAcceptedParam = searchParams.get('insuranceAccepted');
     const isAvailableParam = searchParams.get('isAvailable');
     const verifiedOnlyParam = searchParams.get('verifiedOnly');
@@ -73,7 +77,7 @@ export async function GET(req: NextRequest) {
       priceMin: searchParams.get('priceMin') ? parseFloat(searchParams.get('priceMin')!) : undefined,
       priceMax: searchParams.get('priceMax') ? parseFloat(searchParams.get('priceMax')!) : undefined,
       priceRange: (searchParams.get('priceRange') as 'FREE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'PREMIUM' | 'CONTACT' | undefined) || undefined,
-      ageGroup: (searchParams.get('ageGroup') as 'INFANT' | 'TODDLER' | 'CHILD' | 'TEEN' | 'ADULT' | 'ALL_AGES' | undefined) || undefined,
+      ageGroups: ageGroups.length > 0 ? ageGroups : undefined,
       listingType: (listingTypeParam as 'SERVICE' | 'THERAPY' | 'SHOP' | 'SCHOOL' | 'EVENT' | undefined) || undefined,
       verifiedOnly: verifiedOnlyParam === null ? undefined : verifiedOnlyParam === 'true',
       insuranceAccepted: insuranceAcceptedParam === null ? undefined : insuranceAcceptedParam === 'true',
@@ -205,10 +209,13 @@ async function searchServices(params: SearchParams, userId?: string) {
     where.priceRange = params.priceRange;
   }
 
-  // Age group filter
-  if (params.ageGroup) {
+  // Age group filter. `hasSome` because the selection is a union â€” a family
+  // choosing Child + Teen wants listings serving either. The selection is widened
+  // to include ALL_AGES so that a listing declared as serving everyone is not
+  // hidden by every age filter (see ageGroupFilterValues).
+  if (params.ageGroups && params.ageGroups.length > 0) {
     where.ageGroups = {
-      has: params.ageGroup,
+      hasSome: ageGroupFilterValues(params.ageGroups),
     };
   }
 
@@ -217,7 +224,7 @@ async function searchServices(params: SearchParams, userId?: string) {
     where.listingType = params.listingType;
   }
 
-  // Verified-only filter — providers confirmed at BASIC_VERIFIED or LICENSED.
+  // Verified-only filter â€” providers confirmed at BASIC_VERIFIED or LICENSED.
   if (params.verifiedOnly) {
     where.verificationLevel = { in: ['BASIC_VERIFIED', 'LICENSED'] };
   }
@@ -238,7 +245,7 @@ async function searchServices(params: SearchParams, userId?: string) {
   const orderBy = getOrderBy(sortBy);
 
   // Execute query with relations. `relationLoadStrategy: 'join'` collapses the
-  // main query + every relation into ONE round-trip (LATERAL join) — critical on
+  // main query + every relation into ONE round-trip (LATERAL join) â€” critical on
   // a remote pooled connection where each extra query adds latency.
   const [services, total] = await Promise.all([
     prisma.service.findMany({
@@ -314,7 +321,7 @@ async function searchServices(params: SearchParams, userId?: string) {
     frequency: service.frequency,
     isAvailable: service.isAvailable,
     // Category-expansion: listing kind, trust tier, and type-specific fields the
-    // card uses to render its badge + secondary info line (plan §7.5).
+    // card uses to render its badge + secondary info line (plan Â§7.5).
     listingType: service.listingType,
     verificationLevel: service.verificationLevel,
     deliveryMode: service.deliveryMode,
@@ -330,7 +337,7 @@ async function searchServices(params: SearchParams, userId?: string) {
     capacity: service.capacity,
     startDate: service.startDate,
     endDate: service.endDate,
-    // Per-listing rating (multi-listing marketplace) — each listing reviewed on its own.
+    // Per-listing rating (multi-listing marketplace) â€” each listing reviewed on its own.
     averageRating: service.averageRating,
     totalReviews: service.totalReviews,
     business: service.business,
@@ -356,7 +363,7 @@ async function searchServices(params: SearchParams, userId?: string) {
 
 // Helper: Get order by clause
 // `relevance` weights provider trust (verification tier) alongside rating so a
-// trusted provider isn't outranked purely on recency/proximity (plan §4).
+// trusted provider isn't outranked purely on recency/proximity (plan Â§4).
 // Enum order is UNVERIFIED < BASIC_VERIFIED < LICENSED, so `desc` surfaces
 // LICENSED first.
 function getOrderBy(sortBy: SearchParams['sortBy']) {
@@ -390,7 +397,7 @@ function getAppliedFilters(params: SearchParams) {
   if (params.listingType) applied.push('listingType');
   if (params.verifiedOnly) applied.push('verified');
   if (params.priceRange) applied.push('priceRange');
-  if (params.ageGroup) applied.push('ageGroup');
+  if (params.ageGroups?.length) applied.push('ageGroup');
   if (params.insuranceAccepted) applied.push('insurance');
   if (params.minRating) applied.push('rating');
   
@@ -411,7 +418,7 @@ async function logSearch(params: SearchParams, userId: string | undefined, resul
         serviceTypeId: params.serviceTypeIds?.[0],
         filters: {
           priceRange: params.priceRange,
-          ageGroup: params.ageGroup,
+          ageGroups: params.ageGroups,
           insuranceAccepted: params.insuranceAccepted,
           minRating: params.minRating,
           sortBy: params.sortBy,

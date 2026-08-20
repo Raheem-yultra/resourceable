@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import { LiabilityDisclaimer } from '@/components/listing/LiabilityDisclaimer';
-import { BROWSE_CATEGORIES, type BrowseCategory } from '@/lib/listing-taxonomy';
+import { BROWSE_CATEGORIES, ageGroupMeta, type BrowseCategory } from '@/lib/listing-taxonomy';
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from '@/components/ui/sheet';
@@ -26,7 +26,8 @@ interface ActiveFilters {
   serviceTypes: Array<{ id: string; name: string }>;
   zipCode: string;
   radius: number;
-  priceRange?: { min: number; max: number };
+  /** AgeGroup enum values selected in the filter panel. */
+  ageGroups: string[];
 }
 
 const TAB_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -90,6 +91,7 @@ export function BrowseExperience({
     serviceTypes: [],
     zipCode: '',
     radius: 25,
+    ageGroups: [],
   });
 
   const buildParams = useCallback(
@@ -100,12 +102,18 @@ export function BrowseExperience({
       if (filters.radius) params.append('radius', filters.radius.toString());
       (filters.disabilities || []).forEach((d: { id: string }) => params.append('disabilityId', d.id));
       (filters.serviceTypes || []).forEach((s: { id: string }) => params.append('serviceTypeId', s.id));
-      if (filters.priceMin !== undefined) params.append('priceMin', filters.priceMin.toString());
-      if (filters.priceMax !== undefined) params.append('priceMax', filters.priceMax.toString());
       // A category narrows by listing type, by age group, or by neither — see the
       // BROWSE_CATEGORIES comment on why those are not the same axis.
       if (cat?.listingType) params.append('listingType', cat.listingType);
-      if (cat?.ageGroup) params.append('ageGroup', cat.ageGroup);
+      // A category that pins an age (21+) wins over the age filter rather than
+      // unioning with it — the API treats repeated ageGroup as OR, so sending both
+      // would widen "21+" to include children. The panel hides the age section on
+      // those categories, so the two can't visibly disagree either.
+      if (cat?.ageGroup) {
+        params.append('ageGroup', cat.ageGroup);
+      } else {
+        (filters.ageGroups || []).forEach((g: string) => params.append('ageGroup', g));
+      }
       params.append('sortBy', filters.sortBy || sortBy);
       return params;
     },
@@ -138,14 +146,13 @@ export function BrowseExperience({
             const count = data.services?.length || 0;
             announcement.textContent = `Found ${count} listing${count !== 1 ? 's' : ''}`;
           }
-          if (filters.disabilities || filters.serviceTypes || filters.zipCode) {
+          if (filters.disabilities || filters.serviceTypes || filters.zipCode || filters.ageGroups) {
             setActiveFilters({
               disabilities: filters.disabilities || [],
               serviceTypes: filters.serviceTypes || [],
               zipCode: filters.zipCode || '',
               radius: filters.radius || 25,
-              priceRange:
-                filters.priceMin !== undefined ? { min: filters.priceMin, max: filters.priceMax } : undefined,
+              ageGroups: filters.ageGroups || [],
             });
           }
         } else {
@@ -218,14 +225,22 @@ export function BrowseExperience({
     setActiveFilters(next);
     handleSearch({ query: searchQuery, ...next });
   };
+  const removeAgeFilter = (value: string) => {
+    const next = { ...activeFilters, ageGroups: activeFilters.ageGroups.filter((g) => g !== value) };
+    setActiveFilters(next);
+    handleSearch({ query: searchQuery, ...next });
+  };
   const clearAllFilters = () => {
-    const next = { disabilities: [], serviceTypes: [], zipCode: '', radius: 25 };
+    const next: ActiveFilters = { disabilities: [], serviceTypes: [], zipCode: '', radius: 25, ageGroups: [] };
     setActiveFilters(next);
     setSearchQuery('');
     handleSearch(next);
   };
 
-  const activeCount = activeFilters.disabilities.length + activeFilters.serviceTypes.length;
+  const activeCount =
+    activeFilters.disabilities.length +
+    activeFilters.serviceTypes.length +
+    activeFilters.ageGroups.length;
 
   return (
     <div className="min-h-screen">
@@ -308,9 +323,11 @@ export function BrowseExperience({
                       radius: activeFilters.radius,
                       disabilities: activeFilters.disabilities,
                       serviceTypes: activeFilters.serviceTypes,
-                      priceMin: activeFilters.priceRange?.min,
-                      priceMax: activeFilters.priceRange?.max,
+                      ageGroups: activeFilters.ageGroups,
                     }}
+                    // On a category that already pins an age (21+), an age filter
+                    // would only contradict it — so it isn't offered.
+                    hideAgeFilter={!!category?.ageGroup}
                     sortBy={sortBy}
                     onSortChange={(value) => setSortBy(value as SortOption)}
                     onSearch={(filters) => { handleSearch({ query: searchQuery, ...filters }); setShowFilters(false); }}
@@ -343,6 +360,16 @@ export function BrowseExperience({
                     <span key={d.id} className="theme-pill">
                       <span className="truncate max-w-[120px] sm:max-w-none">{d.name}</span>
                       <button onClick={() => removeDisabilityFilter(d.id)} className="hover:bg-primary/10 rounded-full p-0.5 ml-1 flex-shrink-0 min-w-[20px] min-h-[20px] flex items-center justify-center" aria-label={`Remove ${d.name} filter`}>
+                        <X className="h-3 w-3" aria-hidden="true" />
+                      </button>
+                    </span>
+                  ))}
+                  {activeFilters.ageGroups.map((g) => (
+                    <span key={g} className="theme-pill">
+                      <span className="truncate max-w-[120px] sm:max-w-none">
+                        {ageGroupMeta(g)?.short ?? g}
+                      </span>
+                      <button onClick={() => removeAgeFilter(g)} className="hover:bg-primary/10 rounded-full p-0.5 ml-1 flex-shrink-0 min-w-[20px] min-h-[20px] flex items-center justify-center" aria-label={`Remove ${ageGroupMeta(g)?.short ?? g} age filter`}>
                         <X className="h-3 w-3" aria-hidden="true" />
                       </button>
                     </span>

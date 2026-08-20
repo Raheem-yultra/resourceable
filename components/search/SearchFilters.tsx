@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { MapPin, Check, Plus, Minus, SlidersHorizontal } from 'lucide-react';
+import { MapPin, Check, Plus, Minus, SlidersHorizontal, Users } from 'lucide-react';
+import { AGE_GROUP_FILTERS } from '@/lib/listing-taxonomy';
 
 interface Disability {
   id: string;
@@ -23,8 +24,8 @@ export interface AppliedFilters {
   radius: number;
   disabilities: Disability[];
   serviceTypes: ServiceType[];
-  priceMin?: number;
-  priceMax?: number;
+  /** AgeGroup enum values. Empty = any age. */
+  ageGroups: string[];
 }
 
 interface SearchFiltersProps {
@@ -34,15 +35,9 @@ interface SearchFiltersProps {
   /** Sort is applied live (not on "Show results"), so it's owned by the parent. */
   sortBy?: string;
   onSortChange?: (value: string) => void;
+  /** Suppress the age section on categories that already pin an age (21+). */
+  hideAgeFilter?: boolean;
 }
-
-const PRICE_RANGES = [
-  { min: 0, max: 50, label: 'Under $50' },
-  { min: 50, max: 100, label: '$50 – $100' },
-  { min: 100, max: 200, label: '$100 – $200' },
-  { min: 200, max: 500, label: '$200 – $500' },
-  { min: 500, max: 999999, label: '$500+' },
-];
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Recommended' },
@@ -54,7 +49,13 @@ const SORT_OPTIONS = [
 /** How many chips to show before the "+N more" toggle. */
 const CHIP_PREVIEW = 8;
 
-export function SearchFilters({ onSearch, initial, sortBy, onSortChange }: SearchFiltersProps) {
+export function SearchFilters({
+  onSearch,
+  initial,
+  sortBy,
+  onSortChange,
+  hideAgeFilter = false,
+}: SearchFiltersProps) {
   const [disabilities, setDisabilities] = useState<Disability[]>([]);
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -69,11 +70,7 @@ export function SearchFilters({ onSearch, initial, sortBy, onSortChange }: Searc
   const [selectedServiceTypes, setSelectedServiceTypes] = useState<ServiceType[]>(
     initial?.serviceTypes ?? []
   );
-  const [priceRange, setPriceRange] = useState<{ min: number; max: number } | null>(
-    initial?.priceMin !== undefined && initial?.priceMax !== undefined
-      ? { min: initial.priceMin, max: initial.priceMax }
-      : null
-  );
+  const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>(initial?.ageGroups ?? []);
   const [showAllDisabilities, setShowAllDisabilities] = useState(false);
   const [showAllServices, setShowAllServices] = useState(false);
 
@@ -116,13 +113,18 @@ export function SearchFilters({ onSearch, initial, sortBy, onSortChange }: Searc
         : [...prev, serviceType]
     );
 
+  const toggleAgeGroup = (value: string) =>
+    setSelectedAgeGroups((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+
   const activeCount = useMemo(
     () =>
       selectedDisabilities.length +
       selectedServiceTypes.length +
-      (priceRange ? 1 : 0) +
+      selectedAgeGroups.length +
       (zipCode ? 1 : 0),
-    [selectedDisabilities, selectedServiceTypes, priceRange, zipCode]
+    [selectedDisabilities, selectedServiceTypes, selectedAgeGroups, zipCode]
   );
 
   const handleApplyFilters = () => {
@@ -131,8 +133,7 @@ export function SearchFilters({ onSearch, initial, sortBy, onSortChange }: Searc
       radius,
       disabilities: selectedDisabilities,
       serviceTypes: selectedServiceTypes,
-      priceMin: priceRange?.min,
-      priceMax: priceRange?.max,
+      ageGroups: selectedAgeGroups,
     });
   };
 
@@ -141,8 +142,8 @@ export function SearchFilters({ onSearch, initial, sortBy, onSortChange }: Searc
     setRadius(25);
     setSelectedDisabilities([]);
     setSelectedServiceTypes([]);
-    setPriceRange(null);
-    onSearch({ zipCode: '', radius: 25, disabilities: [], serviceTypes: [] });
+    setSelectedAgeGroups([]);
+    onSearch({ zipCode: '', radius: 25, disabilities: [], serviceTypes: [], ageGroups: [] });
   };
 
   const visibleDisabilities = showAllDisabilities
@@ -230,6 +231,32 @@ export function SearchFilters({ onSearch, initial, sortBy, onSortChange }: Searc
           </div>
         </FilterSection>
 
+        {/* Age sits directly under Location because those are the two questions a
+            family answers first: who is it for, and is it near me. */}
+        {!hideAgeFilter && (
+        <FilterSection
+          title="Age"
+          icon={<Users className="h-4 w-4" />}
+          count={selectedAgeGroups.length}
+          onClear={selectedAgeGroups.length ? () => setSelectedAgeGroups([]) : undefined}
+        >
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by age">
+            {AGE_GROUP_FILTERS.map((age) => (
+              <Chip
+                key={age.value}
+                selected={selectedAgeGroups.includes(age.value)}
+                onClick={() => toggleAgeGroup(age.value)}
+              >
+                {age.label}
+              </Chip>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Listings marked “all ages” are always included.
+          </p>
+        </FilterSection>
+        )}
+
         <FilterSection
           title="Disability"
           count={selectedDisabilities.length}
@@ -288,28 +315,6 @@ export function SearchFilters({ onSearch, initial, sortBy, onSortChange }: Searc
           </ChipGroup>
         </FilterSection>
 
-        <FilterSection
-          title="Price"
-          count={priceRange ? 1 : 0}
-          onClear={priceRange ? () => setPriceRange(null) : undefined}
-        >
-          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Price range">
-            {PRICE_RANGES.map((range) => {
-              const selected = priceRange?.min === range.min && priceRange?.max === range.max;
-              return (
-                <Chip
-                  key={range.label}
-                  role="radio"
-                  selected={selected}
-                  // Re-clicking the active range clears it — no separate "Any price" option to hunt for.
-                  onClick={() => setPriceRange(selected ? null : { min: range.min, max: range.max })}
-                >
-                  {range.label}
-                </Chip>
-              );
-            })}
-          </div>
-        </FilterSection>
       </div>
 
       {/* Always-reachable actions: the list above scrolls, this bar doesn't. */}

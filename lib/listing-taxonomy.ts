@@ -239,13 +239,58 @@ export const RESOURCE_TOPICS = [
   'Insurance Navigation',
 ] as const;
 
-/** Age-group options for the cross-cutting 21+ filter (plan §2.3). */
-export const AGE_GROUP_OPTIONS = [
-  { value: '0-5', label: '0–5' },
-  { value: '6-12', label: '6–12' },
-  { value: '13-20', label: '13–20' },
-  { value: '21+', label: '21+' },
-] as const;
+/**
+ * Age groups — the single canonical list, matching the `AgeGroup` enum exactly.
+ *
+ * Both the provider form ("who is this for?") and the visitor filter read from
+ * here, so a label can never drift between the two sides. Labels carry the real
+ * age span: "Child" alone makes a provider guess where the boundaries are, and a
+ * parent of a 13-year-old cannot tell whether "Teen" includes them.
+ *
+ * ALL_AGES is deliberately not offered as a *filter* option — it is something a
+ * provider declares, not something a family searches for. A family searching
+ * "Child" wants every listing that serves a child, which includes the all-ages
+ * ones; see `ageGroupFilterValues`.
+ */
+export interface AgeGroupMeta {
+  value: 'INFANT' | 'TODDLER' | 'CHILD' | 'TEEN' | 'ADULT' | 'ALL_AGES';
+  /** Full label with the age span, for forms and filters. */
+  label: string;
+  /** Compact label for badges and active-filter pills. */
+  short: string;
+  /** Offered as a search filter option. */
+  filterable: boolean;
+}
+
+export const AGE_GROUPS: AgeGroupMeta[] = [
+  { value: 'INFANT', label: 'Infant (0–2)', short: 'Infant', filterable: true },
+  { value: 'TODDLER', label: 'Toddler (2–5)', short: 'Toddler', filterable: true },
+  { value: 'CHILD', label: 'Child (5–12)', short: 'Child', filterable: true },
+  { value: 'TEEN', label: 'Teen (12–18)', short: 'Teen', filterable: true },
+  { value: 'ADULT', label: 'Adult (18+)', short: 'Adult', filterable: true },
+  { value: 'ALL_AGES', label: 'All ages', short: 'All ages', filterable: false },
+];
+
+/** The subset offered to families as filter chips. */
+export const AGE_GROUP_FILTERS = AGE_GROUPS.filter((a) => a.filterable);
+
+const AGE_BY_VALUE = new Map(AGE_GROUPS.map((a) => [a.value, a]));
+
+export function ageGroupMeta(value: string): AgeGroupMeta | undefined {
+  return AGE_BY_VALUE.get(value as AgeGroupMeta['value']);
+}
+
+/**
+ * Expand a family's age selection into the values a listing may carry to match.
+ *
+ * A listing tagged ALL_AGES serves a child, so filtering by CHILD must return it
+ * — matching only the literal selection would hide every all-ages listing from
+ * every age filter, which reads as "no results" rather than "broad availability".
+ */
+export function ageGroupFilterValues(selected: string[]): string[] {
+  if (selected.length === 0) return [];
+  return Array.from(new Set([...selected, 'ALL_AGES']));
+}
 
 const BY_TYPE = new Map(LISTING_TYPES.map((t) => [t.type, t]));
 
