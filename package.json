@@ -9,6 +9,7 @@
     "lint": "next lint",
     "preflight": "node scripts/preflight.mjs",
     "seed:fake": "node scripts/seed-fake-accounts.js",
+    "seed:provider": "node scripts/seed-demo-provider.js",
     "seed:demo": "node scripts/seed-demo-data.js",
     "seed:categories": "node scripts/seed-categories.mjs",
     "seed:resources": "node scripts/seed-resources.mjs",
