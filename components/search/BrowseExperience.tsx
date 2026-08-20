@@ -265,37 +265,27 @@ export function BrowseExperience({
                     )}
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto">
-                  <SheetHeader>
-                    <SheetTitle>Filter Listings</SheetTitle>
+                <SheetContent
+                  side="left"
+                  className="flex w-full flex-col gap-0 p-0 sm:max-w-md"
+                >
+                  <SheetHeader className="border-b border-border/70 px-5 py-4 pr-12">
+                    <SheetTitle>Filters</SheetTitle>
                     <SheetDescription>Refine your search to find the right fit</SheetDescription>
                   </SheetHeader>
-                  <div className="mt-6">
-                    <div className="bg-card rounded-lg border p-4 mb-4">
-                      <h3 className="font-semibold mb-3">Sort by</h3>
-                      <div className="space-y-2">
-                        {[
-                          { value: 'relevance', label: 'Recommended' },
-                          { value: 'price', label: 'Price: Low → High' },
-                          { value: 'rating', label: 'Highest Rated' },
-                          { value: 'newest', label: 'Newest' },
-                        ].map((option) => (
-                          <label key={option.value} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded min-h-[44px]">
-                            <input
-                              type="radio"
-                              name="sort"
-                              value={option.value}
-                              checked={sortBy === option.value}
-                              onChange={(e) => setSortBy(e.target.value as SortOption)}
-                              className="h-4 w-4"
-                            />
-                            <span className="text-sm">{option.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    <SearchFilters onSearch={(filters) => { handleSearch({ query: searchQuery, ...filters }); setShowFilters(false); }} />
-                  </div>
+                  <SearchFilters
+                    initial={{
+                      zipCode: activeFilters.zipCode,
+                      radius: activeFilters.radius,
+                      disabilities: activeFilters.disabilities,
+                      serviceTypes: activeFilters.serviceTypes,
+                      priceMin: activeFilters.priceRange?.min,
+                      priceMax: activeFilters.priceRange?.max,
+                    }}
+                    sortBy={sortBy}
+                    onSortChange={(value) => setSortBy(value as SortOption)}
+                    onSearch={(filters) => { handleSearch({ query: searchQuery, ...filters }); setShowFilters(false); }}
+                  />
                 </SheetContent>
               </Sheet>
 

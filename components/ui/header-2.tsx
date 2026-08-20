@@ -121,9 +121,9 @@ export function Header() {
 		<>
 		<header
 			className={cn(
-				'sticky top-0 z-50 mx-auto w-full max-w-5xl border-b border-border/70 bg-background/85 backdrop-blur-xl md:rounded-2xl md:border md:transition-all md:ease-out',
+				'sticky top-0 z-50 mx-auto w-full max-w-5xl border-b border-border/70 bg-background/85 backdrop-blur-xl md:w-fit md:max-w-fit md:rounded-2xl md:border md:transition-all md:ease-out',
 				{
-					'bg-background/90 border-border shadow-sm md:top-4 md:max-w-4xl md:shadow':
+					'bg-background/90 border-border shadow-sm md:top-4 md:shadow':
 						scrolled && !open,
 					'bg-background/95': open,
 				},
@@ -132,13 +132,13 @@ export function Header() {
 			<nav
 				aria-label="Primary"
 				className={cn(
-					'flex h-14 w-full items-center justify-end px-4 md:h-12 md:transition-all md:ease-out',
+					'flex h-14 w-full items-center justify-end px-4 md:h-11 md:w-auto md:px-2 md:transition-all md:ease-out',
 					{
-						'md:px-2': scrolled,
+						'md:px-1.5': scrolled,
 					},
 				)}
 			>
-				<div className="hidden items-center gap-2 md:flex">
+				<div className="hidden items-center gap-1 md:flex">
 					<ThemeToggle />
 					{showMarketplace && (
 						<>
@@ -182,13 +182,13 @@ export function Header() {
 					))}
 					{session ? (
 						<>
-							<Button variant="outline" asChild>
+							<Button variant="ghost" asChild>
 								<Link href="/auth/signout">Sign Out</Link>
 							</Button>
 						</>
 					) : (
 						<>
-							<Button variant="outline" asChild>
+							<Button variant="ghost" asChild>
 								<Link href="/auth/signin">Sign In</Link>
 							</Button>
 							<Button asChild>
@@ -264,12 +264,12 @@ export function Header() {
 					<div className="flex flex-row gap-2">
 						<ThemeToggle />
 						{session ? (
-							<Button variant="outline" className="flex-1 min-h-[44px]" asChild>
+							<Button variant="ghost" className="flex-1 min-h-[44px]" asChild>
 								<Link href="/auth/signout" onClick={() => setOpen(false)}>Sign Out</Link>
 							</Button>
 						) : (
 							<>
-								<Button variant="outline" className="flex-1 min-h-[44px]" asChild>
+								<Button variant="ghost" className="flex-1 min-h-[44px]" asChild>
 									<Link href="/auth/signin" onClick={() => setOpen(false)}>Sign In</Link>
 								</Button>
 								<Button className="flex-1 min-h-[44px]" asChild>
