@@ -39,9 +39,11 @@ interface SearchFiltersProps {
   hideAgeFilter?: boolean;
 }
 
+// No price sort: providers leave price blank often enough that the ordering was
+// mostly an artefact of missing data rather than a real ranking. The API still
+// accepts sortBy=price; it is simply not offered here.
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Recommended' },
-  { value: 'price', label: 'Lowest price' },
   { value: 'rating', label: 'Highest rated' },
   { value: 'newest', label: 'Newest' },
 ];
