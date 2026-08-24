@@ -1,10 +1,10 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { billingVisibleFilter } from '@/lib/billing';
 import { ageGroupFilterValues } from '@/lib/listing-taxonomy';
+import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +23,7 @@ const searchParamsSchema = z.object({
   // is what the 21+ browse category sends.
   ageGroups: z.array(z.enum(['INFANT', 'TODDLER', 'CHILD', 'TEEN', 'ADULT', 'ALL_AGES'])).optional(),
   // Category-expansion: restrict to one bookable listing type (browse tabs).
-  // Omitted = unified "All" search across every type (plan Â§5 / Â§7.1).
+  // Omitted = unified "All" search across every type (plan §5 / §7.1).
   listingType: z.enum(['SERVICE', 'THERAPY', 'SHOP', 'SCHOOL', 'EVENT']).optional(),
   // Only show listings from BASIC_VERIFIED / LICENSED providers.
   verifiedOnly: z.boolean().optional(),
@@ -33,7 +33,10 @@ const searchParamsSchema = z.object({
   radius: z.number().int().min(1).max(100).optional(), // miles
   page: z.number().int().min(1).default(1),
   limit: z.number().int().min(1).max(50).default(20),
-  sortBy: z.enum(['relevance', 'rating', 'distance', 'price', 'newest']).default('relevance'),
+  // No 'distance': ranking by proximity needs the geo maths that getOrderBy does
+  // not implement, and accepting it silently returned relevance order instead —
+  // a wrong answer dressed as the requested one. Rejected with a 400 until it exists.
+  sortBy: z.enum(['relevance', 'rating', 'price', 'newest']).default('relevance'),
 }).refine(
   (params) => params.priceMin === undefined || params.priceMax === undefined || params.priceMin <= params.priceMax,
   {
@@ -46,8 +49,14 @@ type SearchParams = z.infer<typeof searchParamsSchema>;
 
 export async function GET(req: NextRequest) {
   try {
+    // Public and unauthenticated, and every keyword search appends a SearchHistory
+    // row — so an unthrottled client can grow that table without ever signing in.
+    // The ceiling is high enough that real filter-tweaking never reaches it.
+    const rl = rateLimit(`search:${clientIp(req)}`, 120, 60_000);
+    if (!rl.allowed) return tooManyRequests(rl.retryAfterSeconds);
+
     const { searchParams } = new URL(req.url);
-    
+
     // Try to get session, but don't fail if auth is misconfigured
     let session = null;
     try {
@@ -131,8 +140,6 @@ async function searchServices(params: SearchParams, userId?: string) {
     business: {
       isActive: true,
       verificationStatus: 'APPROVED',
-      // Hide providers whose billing has lapsed (suspended/canceled).
-      ...billingVisibleFilter,
     },
   };
 
@@ -209,7 +216,7 @@ async function searchServices(params: SearchParams, userId?: string) {
     where.priceRange = params.priceRange;
   }
 
-  // Age group filter. `hasSome` because the selection is a union â€” a family
+  // Age group filter. `hasSome` because the selection is a union — a family
   // choosing Child + Teen wants listings serving either. The selection is widened
   // to include ALL_AGES so that a listing declared as serving everyone is not
   // hidden by every age filter (see ageGroupFilterValues).
@@ -224,7 +231,7 @@ async function searchServices(params: SearchParams, userId?: string) {
     where.listingType = params.listingType;
   }
 
-  // Verified-only filter â€” providers confirmed at BASIC_VERIFIED or LICENSED.
+  // Verified-only filter — providers confirmed at BASIC_VERIFIED or LICENSED.
   if (params.verifiedOnly) {
     where.verificationLevel = { in: ['BASIC_VERIFIED', 'LICENSED'] };
   }
@@ -245,7 +252,7 @@ async function searchServices(params: SearchParams, userId?: string) {
   const orderBy = getOrderBy(sortBy);
 
   // Execute query with relations. `relationLoadStrategy: 'join'` collapses the
-  // main query + every relation into ONE round-trip (LATERAL join) â€” critical on
+  // main query + every relation into ONE round-trip (LATERAL join) — critical on
   // a remote pooled connection where each extra query adds latency.
   const [services, total] = await Promise.all([
     prisma.service.findMany({
@@ -321,7 +328,7 @@ async function searchServices(params: SearchParams, userId?: string) {
     frequency: service.frequency,
     isAvailable: service.isAvailable,
     // Category-expansion: listing kind, trust tier, and type-specific fields the
-    // card uses to render its badge + secondary info line (plan Â§7.5).
+    // card uses to render its badge + secondary info line (plan §7.5).
     listingType: service.listingType,
     verificationLevel: service.verificationLevel,
     deliveryMode: service.deliveryMode,
@@ -337,7 +344,7 @@ async function searchServices(params: SearchParams, userId?: string) {
     capacity: service.capacity,
     startDate: service.startDate,
     endDate: service.endDate,
-    // Per-listing rating (multi-listing marketplace) â€” each listing reviewed on its own.
+    // Per-listing rating (multi-listing marketplace) — each listing reviewed on its own.
     averageRating: service.averageRating,
     totalReviews: service.totalReviews,
     business: service.business,
@@ -363,7 +370,7 @@ async function searchServices(params: SearchParams, userId?: string) {
 
 // Helper: Get order by clause
 // `relevance` weights provider trust (verification tier) alongside rating so a
-// trusted provider isn't outranked purely on recency/proximity (plan Â§4).
+// trusted provider isn't outranked purely on recency/proximity (plan §4).
 // Enum order is UNVERIFIED < BASIC_VERIFIED < LICENSED, so `desc` surfaces
 // LICENSED first.
 function getOrderBy(sortBy: SearchParams['sortBy']) {

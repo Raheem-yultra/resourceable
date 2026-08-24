@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin';
-import { getMonthlyPrice } from '@/lib/billing';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +14,6 @@ export async function GET() {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [
       newSignups30d,
@@ -27,9 +25,7 @@ export async function GET() {
       totalUsers,
       totalBusinesses,
       serviceTypes,
-      subStatusGroups,
-      churnThisMonth,
-      price,
+      openReports,
     ] = await Promise.all([
       prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
       prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
@@ -45,46 +41,17 @@ export async function GET() {
         orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
         select: { id: true, name: true, category: true, _count: { select: { services: true } } },
       }),
-      // Subscriber counts by billing status (one grouped query)
-      prisma.business.groupBy({
-        by: ['subscriptionStatus'],
-        _count: { _all: true },
-      }),
-      // Churn proxy: subscriptions Stripe reported deleted so far this month.
-      // Uses the idempotency ledger, which records every processed event by type+time.
-      prisma.processedStripeEvent.count({
-        where: { type: 'customer.subscription.deleted', processedAt: { gte: startOfMonth } },
-      }),
-      // Monthly unit price for MRR (null if Stripe isn't configured — MRR degrades to null)
-      getMonthlyPrice(),
+      // Open safety/accuracy reports awaiting an admin. This is the queue that
+      // matters most on a directory serving vulnerable families, so it is a
+      // first-class metric rather than something only visible under Reports.
+      prisma.report.count({ where: { status: 'OPEN' } }),
     ]);
 
     const listingsPerCategory = serviceTypes
       .map((s) => ({ id: s.id, name: s.name, category: s.category, count: s._count.services }))
       .sort((a, b) => b.count - a.count);
 
-    // Tally subscriber counts by status from the grouped result.
-    const subCount = (status: string) =>
-      subStatusGroups.find((g) => g.subscriptionStatus === status)?._count._all ?? 0;
-    const activeSubscribers = subCount('active');
-    const trialing = subCount('trialing');
-    // MRR counts only paying (active) subscribers; trialing aren't billed yet.
-    const mrrCents = price ? activeSubscribers * price.unitAmount : null;
-
-    const billing = {
-      activeSubscribers,
-      trialing,
-      pastDue: subCount('past_due'),
-      suspendedBilling: subCount('suspended_billing'),
-      canceled: subCount('canceled'),
-      unitAmountCents: price?.unitAmount ?? null,
-      currency: price?.currency ?? null,
-      mrrCents,
-      churnThisMonth,
-    };
-
     return NextResponse.json({
-      billing,
       signups: { last7Days: newSignups7d, last30Days: newSignups30d },
       businesses: {
         pending: pendingApprovals,
@@ -95,8 +62,7 @@ export async function GET() {
       },
       users: { total: totalUsers },
       listingsPerCategory,
-      // No reporting/flagging system exists yet; surfaced as null so the UI can say so honestly.
-      flaggedContent: null,
+      flaggedContent: openReports,
     });
   } catch (error) {
     console.error('Admin metrics error:', error);

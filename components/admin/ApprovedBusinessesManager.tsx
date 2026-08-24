@@ -48,31 +48,13 @@ interface Business {
   suspendedAt?: string | null;
   suspensionReason?: string | null;
   createdAt: string;
-  // Billing (Pass 4)
-  subscriptionStatus?: string | null;
-  trialEndsAt?: string | null;
-  currentPeriodEnd?: string | null;
-  stripeSubscriptionId?: string | null;
   user: { id: string; email: string; name?: string };
   services?: Service[];
   businessDisabilities?: Array<{ disability: { name: string } }>;
   _count?: { services: number };
 }
 
-type ActionType = 'suspend' | 'remove' | 'view' | 'unsuspend' | 'extend_trial';
-
-// Presentation for each billing status. `null`/'none' = approved but no subscription yet.
-const SUB_STATUS_META: Record<string, { label: string; cls: string }> = {
-  trialing: { label: 'Trialing', cls: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800' },
-  active: { label: 'Active', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800' },
-  past_due: { label: 'Past due', cls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800' },
-  suspended_billing: { label: 'Suspended (billing)', cls: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-900' },
-  canceled: { label: 'Canceled', cls: 'bg-muted text-muted-foreground border-border' },
-  none: { label: 'No billing', cls: 'bg-muted text-muted-foreground border-border' },
-};
-
-// Statuses that still have a live Stripe subscription we can extend the trial on.
-const EXTENDABLE = new Set(['trialing', 'active', 'past_due', 'suspended_billing']);
+type ActionType = 'suspend' | 'remove' | 'view' | 'unsuspend';
 
 // Provider trust tier (plan §4). Changing it re-syncs every listing's denormalized copy.
 const VERIFICATION_LEVELS = [
@@ -84,19 +66,13 @@ const VERIFICATION_META: Record<string, { label: string; cls: string }> = Object
   VERIFICATION_LEVELS.map((v) => [v.value, { label: v.label, cls: v.cls }])
 );
 
-const SUB_FILTER_OPTIONS = [
-  { value: '', label: 'All billing statuses' },
-  { value: 'trialing', label: 'Trialing' },
-  { value: 'active', label: 'Active' },
-  { value: 'past_due', label: 'Past due' },
-  { value: 'suspended_billing', label: 'Suspended (billing)' },
-  { value: 'canceled', label: 'Canceled' },
-  { value: 'none', label: 'No billing yet' },
+// Approval is the only gate on being live, so the one status worth filtering on
+// here is whether an admin has since suspended the provider.
+const STATE_FILTER_OPTIONS = [
+  { value: '', label: 'All providers' },
+  { value: 'live', label: 'Live' },
+  { value: 'suspended', label: 'Suspended' },
 ];
-
-function fmtDate(d?: string | null) {
-  return d ? new Date(d).toLocaleDateString() : null;
-}
 
 const PRICE_RANGE_LABELS: Record<string, string> = {
   FREE: 'Free', LOW: '$ (Under $50)', MEDIUM: '$$ ($50–$150)', HIGH: '$$$ ($150–$300)', PREMIUM: '$$$$ ($300+)', CONTACT: 'Contact for pricing',
@@ -110,7 +86,6 @@ export function ApprovedBusinessesManager() {
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
   const [actionType, setActionType] = useState<ActionType | null>(null);
   const [reason, setReason] = useState('');
-  const [trialDate, setTrialDate] = useState('');
   const [processing, setProcessing] = useState(false);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
@@ -153,11 +128,8 @@ export function ApprovedBusinessesManager() {
   }, []);
 
   const filteredBusinesses = businesses.filter((b) => {
-    // Billing status filter ('none' matches approved providers with no subscription row)
-    if (statusFilter) {
-      const status = b.subscriptionStatus ?? 'none';
-      if (status !== statusFilter) return false;
-    }
+    if (statusFilter === 'suspended' && !b.isSuspended) return false;
+    if (statusFilter === 'live' && b.isSuspended) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -172,54 +144,12 @@ export function ApprovedBusinessesManager() {
     setSelectedBusiness(business);
     setActionType(action);
     setReason('');
-    // Default the extend-trial picker to +14 days from today.
-    if (action === 'extend_trial') {
-      const d = new Date();
-      d.setDate(d.getDate() + 14);
-      setTrialDate(d.toISOString().slice(0, 10));
-    }
   };
 
   const closeActionDialog = () => {
     setSelectedBusiness(null);
     setActionType(null);
     setReason('');
-    setTrialDate('');
-  };
-
-  // Manual override: extend the provider's trial. Drives Stripe via the API,
-  // which re-syncs our DB, so the returned status is authoritative.
-  const handleExtendTrial = async () => {
-    if (!selectedBusiness || !trialDate) return;
-    // Send end-of-day UTC so the chosen date is fully included.
-    const trialEndsAt = new Date(`${trialDate}T23:59:59.000Z`).toISOString();
-
-    setProcessing(true);
-    try {
-      const response = await fetch(`/api/admin/businesses/${selectedBusiness.id}/billing`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'extend_trial', trialEndsAt, reason: reason.trim() || undefined }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setBusinesses((prev) =>
-          prev.map((b) =>
-            b.id === selectedBusiness.id
-              ? { ...b, subscriptionStatus: data.subscriptionStatus ?? b.subscriptionStatus, trialEndsAt: trialEndsAt }
-              : b
-          )
-        );
-        closeActionDialog();
-      } else {
-        alert(`Failed: ${data.error || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error('Failed to extend trial:', error);
-      alert('Failed to extend trial');
-    } finally {
-      setProcessing(false);
-    }
   };
 
   const handleAction = async () => {
@@ -296,10 +226,10 @@ export function ApprovedBusinessesManager() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            aria-label="Filter by billing status"
+            aria-label="Filter by provider state"
             className="h-10 rounded-md border border-input bg-background px-3 text-sm"
           >
-            {SUB_FILTER_OPTIONS.map((o) => (
+            {STATE_FILTER_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
@@ -343,15 +273,6 @@ export function ApprovedBusinessesManager() {
                         <CheckCircle className="h-3 w-3" /> Approved
                       </span>
                     )}
-                    {/* Billing status badge */}
-                    {(() => {
-                      const meta = SUB_STATUS_META[business.subscriptionStatus ?? 'none'] ?? SUB_STATUS_META.none;
-                      return (
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium border ${meta.cls}`}>
-                          <DollarSign className="h-3 w-3" /> {meta.label}
-                        </span>
-                      );
-                    })()}
                     {/* Verification tier badge */}
                     {(() => {
                       const meta = VERIFICATION_META[business.verificationLevel ?? 'UNVERIFIED'] ?? VERIFICATION_META.UNVERIFIED;
@@ -401,12 +322,6 @@ export function ApprovedBusinessesManager() {
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm"><Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" /><span>Joined {new Date(business.createdAt).toLocaleDateString()}</span></div>
-                    {business.subscriptionStatus === 'trialing' && fmtDate(business.trialEndsAt) && (
-                      <div className="flex items-center gap-2 text-sm"><Calendar className="h-4 w-4 text-sky-500 flex-shrink-0" /><span>Trial ends {fmtDate(business.trialEndsAt)}</span></div>
-                    )}
-                    {(business.subscriptionStatus === 'active' || business.subscriptionStatus === 'past_due') && fmtDate(business.currentPeriodEnd) && (
-                      <div className="flex items-center gap-2 text-sm"><DollarSign className="h-4 w-4 text-muted-foreground flex-shrink-0" /><span>Next billing {fmtDate(business.currentPeriodEnd)}</span></div>
-                    )}
                     {business._count && (
                       <div className="flex items-center gap-2 text-sm"><Users className="h-4 w-4 text-muted-foreground flex-shrink-0" /><span>{business._count.services} service{business._count.services !== 1 ? 's' : ''} listed</span></div>
                     )}
@@ -436,11 +351,6 @@ export function ApprovedBusinessesManager() {
                   ) : (
                     <Button variant="outline" size="sm" onClick={() => openActionDialog(business, 'suspend')} className="flex-1 text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 dark:border-amber-800 dark:hover:bg-amber-950">
                       <Ban className="h-4 w-4 mr-2" /> Suspend
-                    </Button>
-                  )}
-                  {EXTENDABLE.has(business.subscriptionStatus ?? 'none') && (
-                    <Button variant="outline" size="sm" onClick={() => openActionDialog(business, 'extend_trial')} className="flex-1 text-sky-600 border-sky-200 hover:bg-sky-50 hover:text-sky-700 dark:border-sky-800 dark:hover:bg-sky-950">
-                      <Calendar className="h-4 w-4 mr-2" /> Extend Trial
                     </Button>
                   )}
                   <Button variant="outline" size="sm" onClick={() => openActionDialog(business, 'remove')} className="flex-1 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950">
@@ -555,46 +465,6 @@ export function ApprovedBusinessesManager() {
           )}
 
           <DialogFooter><Button onClick={closeActionDialog}>Close</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Extend trial (billing override) dialog */}
-      <Dialog open={actionType === 'extend_trial'} onOpenChange={closeActionDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-sky-600" /> Extend Trial
-            </DialogTitle>
-            <DialogDescription>
-              Sets a new trial end date in Stripe (the source of truth) and re-syncs our records. Use this to comp a
-              provider or give them more time. No charge occurs until the trial ends.
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedBusiness && (
-            <div className="py-4 space-y-4">
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="font-medium">{selectedBusiness.businessName}</p>
-                <p className="text-sm text-muted-foreground">{selectedBusiness.user.email}</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="trialDate">New trial end date *</Label>
-                <Input id="trialDate" type="date" value={trialDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setTrialDate(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="extendReason">Reason (optional)</Label>
-                <Textarea id="extendReason" placeholder="e.g. comped 3 months for early-adopter partner" value={reason} onChange={(e) => setReason(e.target.value)} rows={3} className="resize-none" />
-                <p className="text-xs text-muted-foreground">Recorded in the audit log.</p>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={closeActionDialog} disabled={processing}>Cancel</Button>
-            <Button onClick={handleExtendTrial} disabled={processing || !trialDate}>
-              {processing ? 'Applying…' : 'Extend Trial'}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,12 @@ const reportSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Guests can report, so this is an unauthenticated write straight into the
+    // moderation queue. Unthrottled, one client could bury real safety reports
+    // under noise — the failure mode that matters most on this directory.
+    const rl = rateLimit(`report:${clientIp(req)}`, 10, 10 * 60_000);
+    if (!rl.allowed) return tooManyRequests(rl.retryAfterSeconds);
+
     const parsed = reportSchema.safeParse(await req.json());
     if (!parsed.success) {
       return NextResponse.json(

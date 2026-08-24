@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
 import { sendPasswordChangedEmail } from '@/lib/email';
 import { getAppBaseUrl } from '@/lib/env';
+import { passwordSchema } from '@/lib/validations';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,10 +21,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate password strength
-    if (password.length < 8) {
+    // Same policy as signup, from the same source. Hand-written bounds here had
+    // already drifted from signUpSchema, so a reset could set a password the
+    // signup form would have rejected.
+    const passwordCheck = passwordSchema.safeParse(password);
+    if (!passwordCheck.success) {
       return NextResponse.json(
-        { error: 'Password must be at least 8 characters long' },
+        { error: passwordCheck.error.errors[0]?.message || 'Invalid password' },
         { status: 400 }
       );
     }
@@ -46,7 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Hash new password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(passwordCheck.data, 10);
 
     // Update password and clear reset token
     await prisma.user.update({

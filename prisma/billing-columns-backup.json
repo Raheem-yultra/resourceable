@@ -1,0 +1,266 @@
+{
+  "exportedAt": "2026-08-21T11:28:18.787Z",
+  "businesses": [
+    {
+      "id": "cmrppop8k00d1ksrz6jts0f8z",
+      "businessName": "Unity Learning Collaborative",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:41:58.905Z",
+      "currentPeriodEnd": "2026-08-12T01:41:58.905Z",
+      "trialUsedAt": "2026-01-03T01:41:58.905Z"
+    },
+    {
+      "id": "cmrppp7z300dmksrzfyj7yk9e",
+      "businessName": "Rise Tutoring & Learning Support",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:42:16.048Z",
+      "currentPeriodEnd": "2026-08-12T01:42:16.048Z",
+      "trialUsedAt": "2026-01-03T01:42:16.048Z"
+    },
+    {
+      "id": "cmrpppvje00eaksrzzbeu4oxw",
+      "businessName": "NextStep Transition Services",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:42:39.708Z",
+      "currentPeriodEnd": "2026-08-12T01:42:39.708Z",
+      "trialUsedAt": "2026-01-03T01:42:39.708Z"
+    },
+    {
+      "id": "cmrppqfgm00ezksrzf5gfvfad",
+      "businessName": "Tiny Steps Early Intervention",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:43:03.571Z",
+      "currentPeriodEnd": "2026-08-12T01:43:03.571Z",
+      "trialUsedAt": "2026-01-03T01:43:03.571Z"
+    },
+    {
+      "id": "cmrppqs7r00fkksrzo0wgg5cq",
+      "businessName": "Together Families Network",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:43:20.723Z",
+      "currentPeriodEnd": "2026-08-12T01:43:20.723Z",
+      "trialUsedAt": "2026-01-03T01:43:20.723Z"
+    },
+    {
+      "id": "cmrpphjfz001tksrztbmkwpfb",
+      "businessName": "Harborview Family Medicine",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:36:07.814Z",
+      "currentPeriodEnd": "2026-08-12T01:36:07.814Z",
+      "trialUsedAt": "2026-01-03T01:36:07.813Z"
+    },
+    {
+      "id": "cmrpphzaq002mksrzlp2hf9b6",
+      "businessName": "ClearView Adaptive Optometry",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:36:28.419Z",
+      "currentPeriodEnd": "2026-08-12T01:36:28.419Z",
+      "trialUsedAt": "2026-01-03T01:36:28.419Z"
+    },
+    {
+      "id": "cmrppibdj0037ksrzig7bjvok",
+      "businessName": "NourishWell Pediatric Nutrition",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "trialing",
+      "trialEndsAt": "2026-08-03T01:36:43.529Z",
+      "currentPeriodEnd": "2026-08-03T01:36:43.529Z",
+      "trialUsedAt": "2026-07-22T01:36:43.529Z"
+    },
+    {
+      "id": "cmrppimyx003pksrzrhbulv7z",
+      "businessName": "Helping Hands Home Care",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:36:58.960Z",
+      "currentPeriodEnd": "2026-08-12T01:36:58.960Z",
+      "trialUsedAt": "2026-01-03T01:36:58.960Z"
+    },
+    {
+      "id": "cmrppj2u1004hksrzwng4jwjh",
+      "businessName": "Serenity Adaptive Salon",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:37:19.565Z",
+      "currentPeriodEnd": "2026-08-12T01:37:19.565Z",
+      "trialUsedAt": "2026-01-03T01:37:19.565Z"
+    },
+    {
+      "id": "cmrppjefk004zksrzn7iv4gx9",
+      "businessName": "Bright Steps Therapy Group",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:37:34.675Z",
+      "currentPeriodEnd": "2026-08-12T01:37:34.675Z",
+      "trialUsedAt": "2026-01-03T01:37:34.675Z"
+    },
+    {
+      "id": "cmrpplrau008hksrzlfcffxy1",
+      "businessName": "AbleGear Mobility & Equipment",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:39:26.492Z",
+      "currentPeriodEnd": "2026-08-12T01:39:26.492Z",
+      "trialUsedAt": "2026-01-03T01:39:26.492Z"
+    },
+    {
+      "id": "cmrpprpvz00h6ksrzybdc0cj2",
+      "businessName": "Hope & Access Foundation",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:44:05.324Z",
+      "currentPeriodEnd": "2026-08-12T01:44:05.324Z",
+      "trialUsedAt": "2026-01-03T01:44:05.324Z"
+    },
+    {
+      "id": "cmrppgnk4000dksrzkoorm2e7",
+      "businessName": "Gentle Cuts Barbershop",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:35:26.234Z",
+      "currentPeriodEnd": "2026-08-12T01:35:26.234Z",
+      "trialUsedAt": "2026-01-03T01:35:26.234Z"
+    },
+    {
+      "id": "cmrpph3l70011ksrz0xvvhvqd",
+      "businessName": "Bright Smiles Special Care Dentistry",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:35:47.014Z",
+      "currentPeriodEnd": "2026-08-12T01:35:47.014Z",
+      "trialUsedAt": "2026-01-03T01:35:47.014Z"
+    },
+    {
+      "id": "cmrppjufl005rksrzwdz18m9f",
+      "businessName": "Spectrum ABA Center",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:37:55.838Z",
+      "currentPeriodEnd": "2026-08-12T01:37:55.838Z",
+      "trialUsedAt": "2026-01-03T01:37:55.837Z"
+    },
+    {
+      "id": "cmrppkeje006hksrzyeuqluma",
+      "businessName": "MoveForward Physical Therapy",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:38:21.994Z",
+      "currentPeriodEnd": "2026-08-12T01:38:21.994Z",
+      "trialUsedAt": "2026-01-03T01:38:21.994Z"
+    },
+    {
+      "id": "cmrppr82k00gdksrz11d4vyig",
+      "businessName": "Camp Evergreen Abilities",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:43:42.037Z",
+      "currentPeriodEnd": "2026-08-12T01:43:42.037Z",
+      "trialUsedAt": "2026-01-03T01:43:42.037Z"
+    },
+    {
+      "id": "cmrppsa4200hyksrzfogo02cs",
+      "businessName": "Advocacy Alliance",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:44:27.734Z",
+      "currentPeriodEnd": "2026-08-12T01:44:27.734Z",
+      "trialUsedAt": "2026-01-03T01:44:27.734Z"
+    },
+    {
+      "id": "cmrppkui30071ksrzljzczr9d",
+      "businessName": "Mindful Growth Counseling",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:38:42.639Z",
+      "currentPeriodEnd": "2026-08-12T01:38:42.639Z",
+      "trialUsedAt": "2026-01-03T01:38:42.639Z"
+    },
+    {
+      "id": "cmrpplbfn007pksrz222zuv42",
+      "businessName": "Harmony Hearts Music & Art Therapy",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:39:05.134Z",
+      "currentPeriodEnd": "2026-08-12T01:39:05.134Z",
+      "trialUsedAt": "2026-01-03T01:39:05.134Z"
+    },
+    {
+      "id": "cmrppmbkf009bksrz3r1jwmer",
+      "businessName": "Sensory Haven Shop",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "trialing",
+      "trialEndsAt": "2026-08-03T01:39:53.735Z",
+      "currentPeriodEnd": "2026-08-03T01:39:53.735Z",
+      "trialUsedAt": "2026-07-22T01:39:53.735Z"
+    },
+    {
+      "id": "cmrppmvp500a7ksrzl4funftf",
+      "businessName": "Voices AAC Solutions",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:40:20.980Z",
+      "currentPeriodEnd": "2026-08-12T01:40:20.980Z",
+      "trialUsedAt": "2026-01-03T01:40:20.980Z"
+    },
+    {
+      "id": "cmrppnbpv00azksrzfdozjwn0",
+      "businessName": "ComfortFit Adaptive Apparel",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:40:52.476Z",
+      "currentPeriodEnd": "2026-08-12T01:40:52.476Z",
+      "trialUsedAt": "2026-01-03T01:40:52.476Z"
+    },
+    {
+      "id": "cmrppnrku00bnksrz8pk7d3tw",
+      "businessName": "SteadyNest Adaptive Furniture",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:41:13.755Z",
+      "currentPeriodEnd": "2026-08-12T01:41:13.755Z",
+      "trialUsedAt": "2026-01-03T01:41:13.755Z"
+    },
+    {
+      "id": "cmrppo7gg00ccksrzsfwhwz4z",
+      "businessName": "Pathways Academy",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "subscriptionStatus": "active",
+      "trialEndsAt": "2026-02-02T01:41:35.040Z",
+      "currentPeriodEnd": "2026-08-12T01:41:35.040Z",
+      "trialUsedAt": "2026-01-03T01:41:35.040Z"
+    }
+  ],
+  "processedStripeEvents": []
+}

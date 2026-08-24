@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { businessService } from '@/services/business.service';
 import { getAdminSession, logAdminAction } from '@/lib/admin';
-import { onBusinessApproved } from '@/lib/billing';
+import { onBusinessApproved } from '@/lib/provider-lifecycle';
 import { z } from 'zod';
 
 const verifySchema = z.object({
@@ -60,7 +60,7 @@ export async function PATCH(
       reason: status === 'REJECTED' ? rejectionReason : undefined,
     });
 
-    // On approval, kick off billing onboarding (create Stripe customer + email).
+    // On approval, tell the provider they are live.
     // Self-contained/best-effort — never blocks the approval response.
     if (status === 'APPROVED') {
       await onBusinessApproved(business.id);

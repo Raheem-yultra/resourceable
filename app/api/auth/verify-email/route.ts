@@ -5,6 +5,12 @@ import { getAppBaseUrl } from '@/lib/env';
 
 export async function GET(req: NextRequest) {
   try {
+    // Unauthenticated lookup keyed on a caller-supplied secret. The token is 32
+    // random bytes so guessing it is not realistic, but throttling keeps the
+    // attempt from costing a database query each time.
+    const rl = rateLimit(`verify-check:${clientIp(req)}`, 30, 15 * 60_000);
+    if (!rl.allowed) return tooManyRequests(rl.retryAfterSeconds);
+
     const { searchParams } = new URL(req.url);
     const token = searchParams.get('token');
 
@@ -72,23 +78,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // One response for every outcome below. Saying "already verified" here would
+    // confirm both that the address has an account AND what state it is in, which
+    // is exactly what the unknown-address branch is written to avoid.
+    const GENERIC_RESPONSE = NextResponse.json(
+      { message: 'If an account exists and still needs verifying, a verification email will be sent.' },
+      { status: 200 }
+    );
+
     const user = await prisma.user.findUnique({
       where: { email: String(email).toLowerCase() },
     });
 
-    if (!user) {
-      // Don't reveal if user exists
-      return NextResponse.json(
-        { message: 'If an account exists, a verification email will be sent.' },
-        { status: 200 }
-      );
-    }
-
-    if (user.emailVerified) {
-      return NextResponse.json(
-        { error: 'Email is already verified' },
-        { status: 400 }
-      );
+    if (!user || user.emailVerified) {
+      return GENERIC_RESPONSE;
     }
 
     // Generate new verification token
@@ -109,16 +112,20 @@ export async function POST(req: NextRequest) {
     const { sendVerificationEmail } = await import('@/lib/email');
     const verificationUrl = `${getAppBaseUrl()}/auth/verify-email?token=${verificationToken}`;
 
-    await sendVerificationEmail({
-      email: user.email,
-      name: user.name || 'User',
-      verificationUrl,
-    });
+    // Non-fatal, for two reasons: the token is already persisted so the user can
+    // retry, and a 500 that only ever appears for real unverified accounts would
+    // leak exactly what the generic response above exists to hide.
+    try {
+      await sendVerificationEmail({
+        email: user.email,
+        name: user.name || 'User',
+        verificationUrl,
+      });
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+    }
 
-    return NextResponse.json(
-      { message: 'Verification email sent. Please check your inbox.' },
-      { status: 200 }
-    );
+    return GENERIC_RESPONSE;
   } catch (error) {
     console.error('Resend verification error:', error);
     return NextResponse.json(

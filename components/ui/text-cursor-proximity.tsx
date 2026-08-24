@@ -1,7 +1,7 @@
 "use client"
 
-import React, { CSSProperties, forwardRef, useRef } from "react"
-import { motion, useAnimationFrame, useMotionValue, useTransform } from "motion/react"
+import React, { CSSProperties, forwardRef, useMemo, useRef } from "react"
+import { transform, useAnimationFrame } from "motion/react"
 import { useMousePositionRef } from "@/hooks/use-mouse-position-ref"
 
 // Helper type that makes all properties of CSSProperties accept number | string
@@ -24,6 +24,21 @@ interface TextProps extends React.HTMLAttributes<HTMLSpanElement> {
   falloff?: "linear" | "exponential" | "gaussian"
 }
 
+const calculateDistance = (x1: number, y1: number, x2: number, y2: number): number =>
+  Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
+
+/**
+ * Per-letter styling driven by cursor proximity.
+ *
+ * The interpolated styles are written straight to each letter's DOM node from the
+ * animation frame. The obvious alternative — a MotionValue per letter and a
+ * `useTransform` per style property — means calling hooks inside the render loop,
+ * so the number of hooks becomes a function of the label length and the style
+ * count. React only tolerates that while both happen to stay constant; change the
+ * label at runtime and the component throws "rendered more hooks than during the
+ * previous render". Writing to the node directly has no such coupling, and skips a
+ * React render per frame besides.
+ */
 const TextCursorProximity = forwardRef<HTMLSpanElement, TextProps>(
   (
     {
@@ -40,22 +55,37 @@ const TextCursorProximity = forwardRef<HTMLSpanElement, TextProps>(
   ) => {
     const letterRefs = useRef<(HTMLSpanElement | null)[]>([])
     const mousePositionRef = useMousePositionRef(containerRef)
-    
-    // Create a motion value for each letter's proximity
-    const letterProximities = useRef(
-      Array(label.replace(/\s/g, "").length)
-        .fill(0)
-        .map(() => useMotionValue(0))
-    )
 
-    const calculateDistance = (
-      x1: number,
-      y1: number,
-      x2: number,
-      y2: number
-    ): number => {
-      return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
-    }
+    // One interpolator per style property, mapping proximity 0..1 onto from..to.
+    //
+    // Endpoints that reference a CSS custom property (`hsl(var(--primary))`) cannot
+    // go through motion's mixer: it has no way to resolve the variable, so it gives
+    // up and returns the `to` value at every proximity — the colour looked animated
+    // but was pinned to its end state. Those are handed to CSS as a `color-mix()`
+    // instead, which resolves the variables at paint time and so keeps following
+    // the light/dark theme for free.
+    const interpolators = useMemo(
+      () =>
+        Object.entries(styles).map(([property, value]) => {
+          const from = String(value.from)
+          const to = String(value.to)
+
+          if (from.includes("var(") || to.includes("var(")) {
+            return [
+              property,
+              (progress: number) => {
+                const pct = Math.min(Math.max(progress, 0), 1) * 100
+                return `color-mix(in oklab, ${to} ${pct}%, ${from})`
+              },
+            ] as const
+          }
+
+          // `transform` is motion's standalone mapper — the same interpolation
+          // `useTransform` performs, without being a hook.
+          return [property, transform([0, 1], [value.from, value.to])] as const
+        }),
+      [styles]
+    )
 
     const calculateFalloff = (distance: number): number => {
       const normalizedDistance = Math.min(Math.max(1 - distance / radius, 0), 1)
@@ -75,7 +105,7 @@ const TextCursorProximity = forwardRef<HTMLSpanElement, TextProps>(
       if (!containerRef.current) return
       const containerRect = containerRef.current.getBoundingClientRect()
 
-      letterRefs.current.forEach((letterRef, index) => {
+      letterRefs.current.forEach((letterRef) => {
         if (!letterRef) return
 
         const rect = letterRef.getBoundingClientRect()
@@ -90,7 +120,10 @@ const TextCursorProximity = forwardRef<HTMLSpanElement, TextProps>(
         )
 
         const proximity = calculateFalloff(distance)
-        letterProximities.current[index].set(proximity)
+
+        for (const [property, interpolate] of interpolators) {
+          letterRef.style[property as any] = String(interpolate(proximity))
+        }
       })
     })
 
@@ -108,26 +141,18 @@ const TextCursorProximity = forwardRef<HTMLSpanElement, TextProps>(
           <span key={wordIndex} className="inline-block whitespace-nowrap">
             {word.split("").map((letter) => {
               const currentLetterIndex = letterIndex++
-              const proximity = letterProximities.current[currentLetterIndex]
-              
-              // Create transformed values for each style property
-              const transformedStyles = Object.entries(styles).reduce((acc, [key, value]) => {
-                acc[key] = useTransform(proximity, [0, 1], [value.from, value.to])
-                return acc
-              }, {} as Record<string, any>)
 
               return (
-                <motion.span
+                <span
                   key={currentLetterIndex}
                   ref={(el: HTMLSpanElement | null) => {
                     letterRefs.current[currentLetterIndex] = el
                   }}
                   className="inline-block"
                   aria-hidden="true"
-                  style={transformedStyles}
                 >
                   {letter}
-                </motion.span>
+                </span>
               )
             })}
             {wordIndex < words.length - 1 && (

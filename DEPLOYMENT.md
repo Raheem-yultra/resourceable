@@ -5,7 +5,7 @@ Every **human step** needed to take ResourceAble live, in order. Steps marked
 environment.
 
 Stack: **Next.js 14 (App Router) · Prisma · PostgreSQL (Supabase) · NextAuth ·
-Stripe · Resend · Vercel**
+Resend · Vercel**
 
 ---
 
@@ -16,8 +16,7 @@ Stripe · Resend · Vercel**
 | GitHub | Source repo (`Raheem-yultra/resourceable`) | github.com |
 | Vercel | Hosting + serverless runtime | vercel.com |
 | Supabase | PostgreSQL database | supabase.com |
-| Stripe | Provider subscription billing ($/month + 30-day trial) | stripe.com |
-| Resend | Transactional email (verification, resets, billing notices) | resend.com |
+| Resend | Transactional email (verification, resets, admin notices) | resend.com |
 
 ---
 
@@ -32,15 +31,10 @@ Local development uses `.env.local`. **Never commit real values** — only
 | `DATABASE_URL` | ✅ | Supabase **pooled** connection string (port `6543`, `pgbouncer=true&connection_limit=1`). Supabase → Project → Connect → "Transaction pooler". |
 | `DIRECT_URL` | ✅ | Supabase **session** connection string — **port `5432`, and WITHOUT `pgbouncer=true` / `connection_limit`**. Used by Prisma for `db push` / migrations only. ⚠️ It must NOT be the same as `DATABASE_URL`: the transaction pooler (`6543`) cannot run DDL, so `prisma db push` hangs forever with no error if this points at `6543`. See the gotcha in §9. |
 | `NEXTAUTH_SECRET` | ✅ | Random 32+ byte secret. Generate: `openssl rand -base64 32`. **Different value per environment.** |
-| `NEXTAUTH_URL` | ✅ | The canonical site URL, e.g. `https://yourdomain.com`. Also used to build email links and Stripe redirect URLs — must be correct or those break. |
+| `NEXTAUTH_URL` | ✅ | The canonical site URL, e.g. `https://yourdomain.com`. Also used to build every emailed link — must be correct or those break. |
 | `RESEND_API_KEY` | ✅ | Resend → API Keys. Emails silently fail without it. |
 | `EMAIL_FROM` | ✅ (prod) | Verified sender, e.g. `ResourceAble <no-reply@yourdomain.com>`. Falls back to `onboarding@resend.dev` (dev only — won't deliver to arbitrary recipients). |
 | `SUPPORT_EMAIL` | Recommended | Reply-to on all outbound email. Defaults to `support@resourceable.com`. |
-| `STRIPE_SECRET_KEY` | ✅ | Stripe → Developers → API keys. Use **test** key until launch day, then swap to **live**. |
-| `STRIPE_PRICE_ID` | ✅ | The monthly subscription Price. Printed by `npm run stripe:setup` (step 5). |
-| `STRIPE_WEBHOOK_SECRET` | ✅ | Signing secret of the webhook endpoint you create in step 5c. |
-| `STRIPE_PRICE_AMOUNT` | Optional | Only read by the one-off `stripe:setup` script (cents; default `4900` = $49/mo). |
-| `STRIPE_PRICE_CURRENCY` | Optional | Same script; default `usd`. |
 
 ---
 
@@ -87,7 +81,7 @@ Local development uses `.env.local`. **Never commit real values** — only
 2. Create an API key → set `RESEND_API_KEY`.
 3. Set `EMAIL_FROM` to an address on the verified domain
    (format: `ResourceAble <no-reply@yourdomain.com>`).
-4. Set `SUPPORT_EMAIL` to a real inbox you monitor — suspension/billing emails
+4. Set `SUPPORT_EMAIL` to a real inbox you monitor — suspension/approval emails
    use it as reply-to.
 
 Verify with `npm run preflight`, which checks the key, lists every domain in the
@@ -132,46 +126,29 @@ That is a working development posture and a **non-shippable production one**:
 | Contact form | Provider (Reply-To = the customer) + customer | No |
 | Admin suspend / unsuspend / remove | Provider owner | No |
 | Provider approved | Provider owner | No |
-| Trial ending / payment failed (Stripe webhook) | Provider owner | No |
 
 Every send is non-fatal by design: a mail outage must never make a signup,
 password reset, or admin action appear to have failed.
 
 ---
 
-## 5. Billing (Stripe)
+## 5. Billing — not in use
 
-> Do all of this in **test mode** first, verify end-to-end, then repeat the three
-> steps below in **live mode** on launch day.
+Providers are **not charged**. The whole path to being listed is: create an
+account → submit business details → wait for an admin to approve. Approval is
+the only gate; once it lands, the provider's listings are live and they can
+answer messages.
 
-**a. API key** — Developers → API keys → copy the secret key → `STRIPE_SECRET_KEY`.
+Nothing here needs configuring, and no payment provider is wired up. The billing
+columns, the `ProcessedStripeEvent` table and the `SubscriptionStatus` enum have
+all been dropped — see `prisma/drop-billing.sql`, with the dropped column values
+recorded in `prisma/billing-columns-backup.json`.
 
-**b. Product + price (one-time per mode)**
-```bash
-npm run stripe:setup
-```
-Creates the "ResourceAble Provider Subscription" product + monthly price and
-prints the `price_...` id → set it as `STRIPE_PRICE_ID`.
-(Override amount/currency with `STRIPE_PRICE_AMOUNT` / `STRIPE_PRICE_CURRENCY`.)
-
-**c. Webhook endpoint (one-time per mode)**
-Developers → Webhooks → **Add endpoint**:
-- URL: `https://yourdomain.com/api/webhooks/stripe`
-- Events to send (exactly these six):
-  - `checkout.session.completed`
-  - `customer.subscription.created`
-  - `customer.subscription.updated`
-  - `customer.subscription.deleted`
-  - `customer.subscription.trial_will_end`
-  - `invoice.payment_failed`
-- Copy the endpoint's **Signing secret** (`whsec_...`) → `STRIPE_WEBHOOK_SECRET`.
-
-**d. Customer Portal (one-time)** — Settings → Billing → Customer portal →
-enable it (the "Manage Billing" button opens it; it 500s if the portal was never
-activated).
-
-**Local webhook testing:** `stripe listen --forward-to localhost:3000/api/webhooks/stripe`
-and use the `whsec_...` it prints as your local `STRIPE_WEBHOOK_SECRET`.
+Re-introducing paid plans is therefore a schema change, not just a code change:
+re-apply `prisma/add-billing.sql` + `prisma/add-billing-admin.sql`, then rebuild
+the gating layer. Search, listing management, messaging and the public pages all
+key off `verificationStatus` + `isActive` alone today, so none of that gating
+survives in the application code.
 
 ---
 
@@ -184,8 +161,8 @@ and use the `whsec_...` it prints as your local `STRIPE_WEBHOOK_SECRET`.
    (and Preview, if you want working preview deploys — point previews at a
    separate database, never production).
 3. **Before deploying, gate on the preflight.** It validates every required
-   variable and makes live read-only checks against Resend, Stripe, and the
-   database; it exits non-zero if anything would break:
+   variable and makes live read-only checks against Resend and the database;
+   it exits non-zero if anything would break:
    ```bash
    npm run preflight -- --env
    ```
@@ -209,9 +186,8 @@ and use the `whsec_...` it prints as your local `STRIPE_WEBHOOK_SECRET`.
    - [ ] `/search` returns results (or a clean empty state).
    - [ ] Sign up a test **family** account → verification email arrives → link verifies → sign in works.
    - [ ] Sign up a test **provider** account → appears in `/admin` pending queue.
-   - [ ] Approve the provider as admin → approval/billing email arrives.
-   - [ ] Provider dashboard → **Set Up Billing** → Stripe Checkout completes with test card `4242 4242 4242 4242` (test mode).
-   - [ ] Stripe Dashboard → Webhooks → recent deliveries all `200`.
+   - [ ] Approve the provider as admin → approval email arrives.
+   - [ ] Provider's listings now appear in `/search` and on their public page.
    - [ ] Send a message between the two test accounts; reply from the other side.
    - [ ] Submit a report on a listing → appears in `/admin` Reports.
    - [ ] `/resources` shows seeded articles.
@@ -222,12 +198,11 @@ and use the `whsec_...` it prints as your local `STRIPE_WEBHOOK_SECRET`.
 
 ---
 
-## 8. Launch-day switch to live billing
+## 8. Launch day
 
-1. Toggle Stripe to **live mode** and repeat steps 5a–5d (live key, live
-   product/price, live webhook + secret, portal enabled).
-2. Replace the three Stripe env vars in Vercel with the live values → redeploy.
-3. Run one real card end-to-end, then refund it in the Stripe Dashboard.
+No billing switch is required — there is nothing to charge. Confirm the step 7
+smoke test passes against the production domain with `NEXTAUTH_URL` pointing at
+it, and you are live.
 
 ---
 
@@ -242,7 +217,7 @@ and use the `whsec_...` it prints as your local `STRIPE_WEBHOOK_SECRET`.
 | List users | `npx ts-node scripts/list-users.ts` |
 | DB connectivity check | `node scripts/test-connection.js` |
 | Backups | Supabase → Database → Backups (daily automatic on paid plan — confirm it's on). |
-| Secret rotation | Rotate `NEXTAUTH_SECRET` (logs everyone out), Stripe + Resend keys from their dashboards; update Vercel env + redeploy. |
+| Secret rotation | Rotate `NEXTAUTH_SECRET` (logs everyone out) and the Resend key from its dashboard; update Vercel env + redeploy. |
 
 ### Notes & gotchas
 - **Serverless + pooler:** `DATABASE_URL` must keep `connection_limit=1` on the
@@ -258,8 +233,6 @@ and use the `whsec_...` it prints as your local `STRIPE_WEBHOOK_SECRET`.
   If both print `6543`, fix `DIRECT_URL` (locally in `.env.local` **and** in Vercel).
 - **Env changes require a redeploy** on Vercel; they are baked in at build time
   for some values.
-- **Stripe env vars are lazy-checked:** a missing key doesn't fail the build —
-  it throws on first billing action. The smoke test in step 7 catches this.
 - **`seed:fake` / `seed:demo` are dev/demo-only.** Both print their password to
   the console and create publicly-visible fictional listings. `seed:demo` is the
   stakeholder-presentation dataset (all listing types, reviews, admin queue);

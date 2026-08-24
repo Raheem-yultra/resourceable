@@ -17,8 +17,8 @@
 //   new       PENDING approval, bare profile (exactly what signup creates) —
 //             use this to walk the whole setup: complete profile -> admin
 //             approves -> billing -> add listings.
-//   approved  APPROVED, no subscription yet — starts at the billing step.
-//   live      APPROVED + trialing subscription — an established provider.
+//   approved  APPROVED with a bare profile — just cleared review.
+//   live      APPROVED and fully filled in — an established provider.
 //
 // The login email uses @example.test so the production cleanup documented in
 // DEPLOYMENT.md removes it:
@@ -137,16 +137,13 @@ async function main() {
     verifiedAt: stage === 'new' ? null : now,
     isActive: true,
     isSuspended: false,
-    // Billing only begins at approval; `live` is mid free trial.
-    subscriptionStatus: stage === 'live' ? 'trialing' : null,
-    trialEndsAt: stage === 'live' ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) : null,
   };
 
   const business = await prisma.business.upsert({
     where: { userId: user.id },
     create: { userId: user.id, ...businessData },
     update: businessData,
-    select: { id: true, businessName: true, verificationStatus: true, subscriptionStatus: true },
+    select: { id: true, businessName: true, verificationStatus: true },
   });
 
   const listingCount = await prisma.service.count({ where: { businessId: business.id } });
@@ -158,7 +155,6 @@ async function main() {
   console.log(`  Stage     ${stage}`);
   console.log(`  Business  ${business.businessName} (${business.id})`);
   console.log(`  Approval  ${business.verificationStatus}`);
-  console.log(`  Billing   ${business.subscriptionStatus ?? 'not started'}`);
   console.log(`  Listings  ${listingCount}`);
   console.log(`\n  Sign in:  ${baseUrl}/auth/signin`);
 
@@ -166,10 +162,8 @@ async function main() {
     console.log('\nNext steps to simulate setup:');
     console.log('  1. Sign in -> /business/profile, complete the profile.');
     console.log('  2. Sign in as an admin -> /admin, approve the pending provider.');
-    console.log('     (approval sends the billing email and creates the Stripe customer)');
-    console.log('  3. Back as the provider -> /business/dashboard -> Set Up Billing.');
-    console.log('     Stripe must be configured for this step; see DEPLOYMENT.md section 5.');
-    console.log('  4. /business/listings -> add a listing and confirm it appears in /browse.');
+    console.log('     (approval emails the provider and puts their listings live)');
+    console.log('  3. /business/listings -> add a listing and confirm it appears in /browse.');
   }
   console.log('\nRemove it again:  npm run seed:provider -- --reset\n');
 }

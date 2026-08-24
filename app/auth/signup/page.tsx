@@ -9,6 +9,15 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail, Lock, User, MapPin, Building2, Phone } from 'lucide-react';
 
+// What a provider account actually involves, stated before they commit to typing.
+// Signup only opens the account; the details and listings come after email
+// verification, and hiding that is what makes step 2 feel like a surprise.
+const PROVIDER_STEPS = [
+  'Create your account and verify your email',
+  'Add your business details and the credentials we verify',
+  'Create a listing for each service, product, program, or event you offer',
+];
+
 export default function SignUpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -176,6 +185,26 @@ export default function SignUpPage() {
               </button>
               </div>
             </fieldset>
+
+            {/* What signing up as a provider leads to */}
+            {formData.role === 'BUSINESS' && (
+              <div className="rounded-lg border bg-muted/40 p-3">
+                <p className="text-xs font-medium">Three steps to being listed</p>
+                <ol className="mt-2 space-y-1.5">
+                  {PROVIDER_STEPS.map((step, i) => (
+                    <li key={step} className="flex gap-2 text-xs text-muted-foreground">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold">
+                        {i + 1}
+                      </span>
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  This form is step 1 — it takes about a minute.
+                </p>
+              </div>
+            )}
 
             {/* Name Field */}
             <div className="space-y-2">

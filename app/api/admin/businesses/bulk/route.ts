@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { businessService } from '@/services/business.service';
 import { getAdminSession, logAdminAction } from '@/lib/admin';
-import { onBusinessApproved } from '@/lib/billing';
+import { onBusinessApproved } from '@/lib/provider-lifecycle';
 import { z } from 'zod';
 
 // Bulk approve/reject. Each item is applied and audit-logged INDIVIDUALLY
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
           reason: action === 'reject' ? reason : undefined,
           metadata: { viaBulk: true },
         });
-        // Billing onboarding on approval (best-effort, never throws)
+        // Notify the provider they are live (best-effort, never throws)
         if (action === 'approve') {
           await onBusinessApproved(business.id);
         }

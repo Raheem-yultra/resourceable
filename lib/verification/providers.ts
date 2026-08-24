@@ -14,6 +14,12 @@ import { promises as dns } from 'dns';
 /** Per-request ceiling. Checks run in parallel, so this also bounds the whole run. */
 const TIMEOUT_MS = 5_000;
 
+/** Per-lookup DNS ceiling. Three record types are tried, so this bounds them all. */
+const DNS_TIMEOUT_MS = 2_000;
+
+/** Total wall-clock budget for proving a site is reachable, across all attempts. */
+const SITE_PROBE_BUDGET_MS = 6_000;
+
 /** Identifies us to public APIs — several ask for a contactable UA string. */
 const USER_AGENT = 'ResourceAble/1.0 (provider verification; +https://resourceable.vercel.app)';
 
@@ -31,6 +37,27 @@ async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs =
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * Bounds a promise that has no timeout of its own (notably Node's DNS resolver,
+ * which retries per configured nameserver and can hang far longer than any
+ * request budget). Rejects with `reason` so callers can degrade to UNKNOWN.
+ */
+function withDeadline<T>(promise: Promise<T>, timeoutMs: number, reason: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(Object.assign(new Error(reason), { code: 'ETIMEOUT' })), timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
 }
 
 async function fetchJson<T>(url: string, init: RequestInit = {}, timeoutMs = TIMEOUT_MS): Promise<T> {
@@ -100,9 +127,13 @@ export type DomainExistence = 'YES' | 'NO' | 'UNKNOWN';
 
 export async function domainExists(host: string): Promise<DomainExistence> {
   let sawNotFound = false;
-  for (const lookup of [dns.resolve4, dns.resolve6, dns.resolveMx] as const) {
+  const lookups: Array<(host: string) => Promise<unknown[]>> = [dns.resolve4, dns.resolve6, dns.resolveMx];
+  for (const lookup of lookups) {
     try {
-      const records = await lookup(host);
+      // Node's resolver has no timeout of its own and retries per nameserver, so a
+      // wedged resolver could outlast the whole serverless budget. A timeout here is
+      // "we could not check" (UNKNOWN), never evidence against the provider.
+      const records = await withDeadline(lookup(host), DNS_TIMEOUT_MS, `DNS lookup for ${host} timed out`);
       if (records.length > 0) return 'YES';
     } catch (error: any) {
       const code = error?.code;
@@ -128,10 +159,19 @@ export async function siteResponds(host: string): Promise<{ ok: boolean; status?
     ['https', 'GET'], // some servers reject HEAD outright
     ['http', 'GET'], // last resort: http-only sites still exist
   ];
+  // The attempts are sequential, so a per-attempt timeout alone would let three
+  // hanging connections stack up. They share ONE budget instead: this whole probe
+  // costs at most SITE_PROBE_BUDGET_MS however many attempts it gets through.
+  const deadline = Date.now() + SITE_PROBE_BUDGET_MS;
   let errorCode: string | undefined;
   for (const [scheme, method] of attempts) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      errorCode = errorCode || 'ETIMEOUT';
+      break;
+    }
     try {
-      const res = await fetchWithTimeout(`${scheme}://${host}`, { method, redirect: 'follow' }, 4_000);
+      const res = await fetchWithTimeout(`${scheme}://${host}`, { method, redirect: 'follow' }, remaining);
       // 4xx/5xx still proves a server is there; only treat 404-on-root as not-live.
       if (res.status < 500 && res.status !== 404) return { ok: true, status: res.status };
     } catch (error: any) {

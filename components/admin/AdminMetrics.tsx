@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, Clock, Ban, CheckCircle, XCircle, BarChart3, AlertTriangle, DollarSign, TrendingDown, CreditCard, Hourglass } from 'lucide-react';
+import { Users, Building2, Clock, Ban, CheckCircle, XCircle, BarChart3, AlertTriangle } from 'lucide-react';
 
 interface Metrics {
   signups: { last7Days: number; last30Days: number };
@@ -10,27 +10,6 @@ interface Metrics {
   users: { total: number };
   listingsPerCategory: Array<{ id: string; name: string; category: string | null; count: number }>;
   flaggedContent: number | null;
-  billing: {
-    activeSubscribers: number;
-    trialing: number;
-    pastDue: number;
-    suspendedBilling: number;
-    canceled: number;
-    unitAmountCents: number | null;
-    currency: string | null;
-    mrrCents: number | null;
-    churnThisMonth: number;
-  };
-}
-
-// Format minor currency units (cents) as a localized amount, e.g. 4900 → "$49".
-function fmtMoney(cents: number | null, currency: string | null): string {
-  if (cents == null || !currency) return '—';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency.toUpperCase(),
-    maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
-  }).format(cents / 100);
 }
 
 function StatTile({
@@ -101,33 +80,9 @@ export function AdminMetrics() {
   }
 
   const maxCount = Math.max(1, ...metrics.listingsPerCategory.map((c) => c.count));
-  const b = metrics.billing;
-  const mrrLabel = fmtMoney(b.mrrCents, b.currency);
-  const priceLabel = b.unitAmountCents != null ? `${fmtMoney(b.unitAmountCents, b.currency)}/mo each` : 'Price unavailable';
 
   return (
     <div className="space-y-6">
-      {/* Revenue / subscriptions */}
-      <div>
-        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-          <DollarSign className="h-4 w-4" /> Revenue &amp; subscriptions
-        </h3>
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          <StatTile label="MRR (estimate)" value={mrrLabel} sub={priceLabel} icon={DollarSign} tone="success" />
-          <StatTile label="Active subscribers" value={b.activeSubscribers} sub="Paying now" icon={CreditCard} tone="success" />
-          <StatTile label="On trial" value={b.trialing} sub="Not yet billed" icon={Hourglass} />
-          <StatTile label="Churn (this month)" value={b.churnThisMonth} sub="Subscriptions ended" icon={TrendingDown} tone={b.churnThisMonth > 0 ? 'danger' : 'default'} />
-          <StatTile label="Past due" value={b.pastDue} sub="Payment failing" icon={AlertTriangle} tone={b.pastDue > 0 ? 'warning' : 'default'} />
-          <StatTile label="Suspended (billing)" value={b.suspendedBilling} sub="Access revoked" icon={Ban} tone={b.suspendedBilling > 0 ? 'danger' : 'default'} />
-          <StatTile label="Canceled" value={b.canceled} sub="Ended by provider" icon={XCircle} />
-        </div>
-        {b.mrrCents === null && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            MRR needs Stripe configured (price lookup unavailable). Subscriber counts are still accurate.
-          </p>
-        )}
-      </div>
-
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <StatTile label="New signups (7d)" value={metrics.signups.last7Days} sub={`${metrics.signups.last30Days} in last 30 days`} icon={Users} />
         <StatTile label="Pending approvals" value={metrics.businesses.pending} sub="Awaiting review" icon={Clock} tone={metrics.businesses.pending > 0 ? 'warning' : 'default'} />
@@ -138,9 +93,10 @@ export function AdminMetrics() {
         <StatTile label="Total users" value={metrics.users.total} icon={Users} />
         <StatTile
           label="Flagged content"
-          value={metrics.flaggedContent === null ? 'N/A' : metrics.flaggedContent}
-          sub={metrics.flaggedContent === null ? 'No reporting system yet' : 'Open reports'}
+          value={metrics.flaggedContent ?? 0}
+          sub="Open reports"
           icon={AlertTriangle}
+          tone={(metrics.flaggedContent ?? 0) > 0 ? 'danger' : 'default'}
         />
       </div>
 

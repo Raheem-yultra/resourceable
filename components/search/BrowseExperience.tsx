@@ -19,7 +19,7 @@ import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
 } from '@/components/ui/sheet';
 
-type SortOption = 'relevance' | 'price' | 'rating' | 'distance' | 'newest';
+type SortOption = 'relevance' | 'price' | 'rating' | 'newest';
 
 interface ActiveFilters {
   disabilities: Array<{ id: string; name: string }>;

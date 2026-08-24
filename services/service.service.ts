@@ -35,6 +35,7 @@ function buildListingColumns(data: ListingData) {
     return isNaN(d.getTime()) ? null : d;
   };
   return {
+    shortDescription: data.shortDescription?.trim() || '',
     description: data.description,
     listingType: data.listingType,
     priceRange: data.priceRange,
@@ -43,7 +44,13 @@ function buildListingColumns(data: ListingData) {
     pricingDetails: data.pricingDetails?.trim() || null,
     ageGroups: data.ageGroups,
     capacity: data.capacity ?? null,
+    duration: data.duration?.trim() || null,
+    frequency: data.frequency?.trim() || null,
+    // Default to English rather than an empty array: an empty list reads on the
+    // public page as "no languages supported" instead of "unspecified".
+    languages: data.languages.length > 0 ? data.languages : ['English'],
     insuranceAccepted: data.insuranceAccepted,
+    insuranceProviders: data.insuranceAccepted ? data.insuranceProviders : [],
     isAvailable: data.isAvailable,
     deliveryMode: data.deliveryMode ?? null,
     condition: data.listingType === 'SHOP' ? data.condition ?? null : null,
@@ -60,15 +67,54 @@ function buildListingColumns(data: ListingData) {
 
 // Re-sync a listing's serviceType (subcategory) mappings to exactly `slugs`.
 async function syncServiceTypeMappings(serviceId: string, slugs: string[]) {
-  await prisma.serviceTypeMap.deleteMany({ where: { serviceId } });
-  if (slugs.length === 0) return;
-  const types = await prisma.serviceType.findMany({ where: { slug: { in: slugs } }, select: { id: true } });
-  if (types.length > 0) {
-    await prisma.serviceTypeMap.createMany({
-      data: types.map((t) => ({ serviceId, serviceTypeId: t.id })),
-      skipDuplicates: true,
-    });
-  }
+  const types =
+    slugs.length > 0
+      ? await prisma.serviceType.findMany({ where: { slug: { in: slugs } }, select: { id: true } })
+      : [];
+  // Clear-and-recreate in ONE transaction. Split across two round-trips, a failure
+  // in between leaves the listing with no categories at all — invisible to the
+  // category filter, and with nothing in the UI to show the save went wrong.
+  await prisma.$transaction([
+    prisma.serviceTypeMap.deleteMany({ where: { serviceId } }),
+    ...(types.length > 0
+      ? [
+          prisma.serviceTypeMap.createMany({
+            data: types.map((t) => ({ serviceId, serviceTypeId: t.id })),
+            skipDuplicates: true,
+          }),
+        ]
+      : []),
+  ]);
+}
+
+// Re-sync a listing's disability mappings to exactly `slugs`.
+//
+// These are what the family-facing disability filter matches on — GET /api/search
+// narrows with `serviceDisabilities.some(...)`, not the business-level mappings.
+// Until the listing form collected them, no provider-created listing could ever
+// match a disability filter.
+async function syncDisabilityMappings(serviceId: string, slugs: string[]) {
+  const disabilities =
+    slugs.length > 0
+      ? await prisma.disability.findMany({
+          where: { slug: { in: slugs } },
+          select: { id: true },
+        })
+      : [];
+  // One transaction, for the reason above and more sharply: these rows ARE the
+  // disability filter. Losing them between the delete and the create drops the
+  // listing out of every disability search while it still looks fine to its owner.
+  await prisma.$transaction([
+    prisma.serviceDisability.deleteMany({ where: { serviceId } }),
+    ...(disabilities.length > 0
+      ? [
+          prisma.serviceDisability.createMany({
+            data: disabilities.map((d) => ({ serviceId, disabilityId: d.id })),
+            skipDuplicates: true,
+          }),
+        ]
+      : []),
+  ]);
 }
 
 export const serviceService = {
@@ -78,10 +124,10 @@ export const serviceService = {
       where: { id },
       include: {
         // Explicit select (NOT `include`) so the public GET /api/services/[id]
-        // response never leaks billing/PII fields — stripeCustomerId, taxId,
-        // adminNotes, licenseNumber, internal review/suspension notes, etc.
-        // Only display-safe fields plus userId/subscriptionStatus (needed by the
-        // PUT/DELETE ownership + billing-gate checks in the route) are returned.
+        // response never leaks PII/internal fields — taxId, adminNotes,
+        // licenseNumber, internal review/suspension notes, etc. Only display-safe
+        // fields plus userId (needed by the PUT/DELETE ownership check in the
+        // route) are returned.
         business: {
           select: {
             id: true,
@@ -110,7 +156,6 @@ export const serviceService = {
             hoursOfOperation: true,
             averageRating: true,
             totalReviews: true,
-            subscriptionStatus: true,
             user: {
               select: {
                 id: true,
@@ -121,6 +166,7 @@ export const serviceService = {
           },
         },
         serviceTypes: { include: { serviceType: { select: { slug: true, name: true } } } },
+        serviceDisabilities: { include: { disability: { select: { slug: true, name: true } } } },
       },
     });
   },
@@ -142,7 +188,10 @@ export const serviceService = {
         ...buildListingColumns(data),
       },
     });
-    await syncServiceTypeMappings(service.id, data.serviceTypes);
+    await Promise.all([
+      syncServiceTypeMappings(service.id, data.serviceTypes),
+      syncDisabilityMappings(service.id, data.disabilityTypes),
+    ]);
     return service;
   },
 
@@ -152,7 +201,10 @@ export const serviceService = {
       where: { id },
       data: { name: data.name.trim(), slug, ...buildListingColumns(data) },
     });
-    await syncServiceTypeMappings(service.id, data.serviceTypes);
+    await Promise.all([
+      syncServiceTypeMappings(service.id, data.serviceTypes),
+      syncDisabilityMappings(service.id, data.disabilityTypes),
+    ]);
     return service;
   },
 
@@ -178,6 +230,7 @@ export const serviceService = {
       where: { businessId },
       include: {
         serviceTypes: { include: { serviceType: { select: { slug: true, name: true } } } },
+        serviceDisabilities: { include: { disability: { select: { slug: true, name: true } } } },
       },
       orderBy: {
         createdAt: 'desc',

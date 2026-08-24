@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { isProviderActionBlocked } from '@/lib/billing';
+import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
 
 // Validation schemas
 const sendMessageSchema = z.object({
@@ -90,14 +90,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // A provider whose billing has lapsed (suspended/canceled) can't respond to
-    // inquiries. Families (USER) are never blocked.
-    if (session.user.role === 'BUSINESS' && (await isProviderActionBlocked(session.user.id))) {
-      return NextResponse.json(
-        { error: 'Your subscription is inactive. Reactivate billing to send messages.', code: 'BILLING_INACTIVE' },
-        { status: 403 }
-      );
-    }
+    // Authenticated, but nothing else caps how fast one account can create rows
+    // in another user's inbox. Keyed by user, not IP, so the limit follows the
+    // account rather than a shared network.
+    const rl = rateLimit(`message:${session.user.id}`, 30, 5 * 60_000);
+    if (!rl.allowed) return tooManyRequests(rl.retryAfterSeconds);
 
     const body = await req.json();
     const validatedData = sendMessageSchema.parse(body);
@@ -170,6 +167,12 @@ export async function POST(req: NextRequest) {
   }
 }
 
+/**
+ * How many recent messages the conversation list groups over. The grouping is done
+ * in memory, so this is the ceiling on what one request can load.
+ */
+const CONVERSATION_SCAN_LIMIT = 2_000;
+
 // Helper function to get conversations
 async function getConversations(
   userId: string,
@@ -203,6 +206,12 @@ async function getConversations(
   // Lean scan: only the fields grouping needs — no per-row user/business joins.
   // Partner details are hydrated afterwards for just the paginated page, which
   // keeps the payload small even as message history grows.
+  //
+  // Bounded by CONVERSATION_SCAN_LIMIT: grouping happens in application memory, so
+  // an unbounded findMany would pull a heavy mailbox's entire history — thousands
+  // of 5,000-character bodies — into one serverless invocation. Newest-first
+  // ordering means the cap only ever truncates the oldest messages, which affects
+  // `totalMessages` on a long-dormant thread and nothing a user is looking at.
   const messages = await prisma.message.findMany({
     where,
     select: {
@@ -217,6 +226,7 @@ async function getConversations(
     orderBy: {
       createdAt: 'desc',
     },
+    take: CONVERSATION_SCAN_LIMIT,
   });
 
   // Group by conversation partner (newest-first, so the first message seen per

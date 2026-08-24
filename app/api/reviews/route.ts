@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { serviceService } from '@/services/service.service';
 import { reviewSchema } from '@/lib/validations';
+import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please sign in to leave a review.' }, { status: 401 });
     }
 
+    // One review per (user, listing) is already enforced by the upsert below, but
+    // nothing caps how many *different* listings one account can review in a burst.
+    const rl = rateLimit(`review:${session.user.id}`, 20, 60 * 60_000);
+    if (!rl.allowed) return tooManyRequests(rl.retryAfterSeconds);
+
     const parsed = reviewSchema.safeParse(await req.json());
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.errors[0]?.message || 'Invalid review' }, { status: 400 });
@@ -43,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     const service = await prisma.service.findUnique({
       where: { id: serviceId },
-      select: { id: true, businessId: true, business: { select: { userId: true, subscriptionStatus: true } } },
+      select: { id: true, businessId: true, business: { select: { userId: true } } },
     });
     if (!service) {
       return NextResponse.json({ error: 'Listing not found' }, { status: 404 });

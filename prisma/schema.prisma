@@ -97,19 +97,11 @@ model Business {
   contactCount         Int                  @default(0)
   averageRating        Float?
   totalReviews         Int                  @default(0)
-  // --- Stripe billing. Only businesses (providers) are billed; families never are. ---
-  // Kept on Business rather than a separate BillingAccount to match the existing pattern
-  // of colocating lifecycle/status flags here, and to keep access-gating filters flat
-  // (search already filters on Business fields — a 1:1 relation would force nested
-  // null-handling everywhere). subscriptionStatus is null until billing starts at approval.
-  stripeCustomerId     String?              @unique
-  stripeSubscriptionId String?              @unique
-  subscriptionStatus   SubscriptionStatus?
-  trialEndsAt          DateTime?
-  currentPeriodEnd     DateTime?
-  // Set the first time this account is granted a free trial. Once set, any
-  // re-subscribe (e.g. after canceling) skips the trial — one trial per account.
-  trialUsedAt          DateTime?
+  // NOTE: providers are not billed. Approval is the only gate on going live, so
+  // there are deliberately no subscription/payment columns here. If paid plans are
+  // introduced later, the gating layer is what has to be built alongside them:
+  // search, listing management, messaging and the public pages all key off
+  // verificationStatus + isActive alone. See prisma/drop-billing.sql.
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
   user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -124,7 +116,6 @@ model Business {
   @@index([city, state])
   @@index([verificationStatus])
   @@index([verificationLevel])
-  @@index([subscriptionStatus])
   @@index([isActive, verificationStatus])
   @@index([isFeatured])
 }
@@ -404,7 +395,6 @@ enum AdminActionType {
   CATEGORY_UPDATED
   CATEGORY_ARCHIVED
   CATEGORY_RESTORED
-  BUSINESS_BILLING_OVERRIDE
   BUSINESS_VERIFICATION_LEVEL
   BUSINESS_CHECKS_RUN
   REPORT_RESOLVED
@@ -450,17 +440,6 @@ enum VerificationCheckResult {
   FAIL // contradicted by an authoritative source
   SKIPPED // provider supplied nothing to check
   ERROR // external source unavailable; says nothing about the provider
-}
-
-// Records every Stripe webhook event id we've fully processed, so retried/duplicate
-// deliveries are ignored (idempotency). Written after successful handling.
-model ProcessedStripeEvent {
-  id          String   @id // Stripe event id (evt_...)
-  type        String
-  processedAt DateTime @default(now())
-
-  @@index([type])
-  @@index([processedAt])
 }
 
 // User-submitted report/flag on a listing (plan §4). Available on every listing
@@ -518,17 +497,6 @@ enum VerificationStatus {
   PENDING
   APPROVED
   REJECTED
-}
-
-// Values are lowercase to mirror Stripe's subscription.status wire format, so webhook
-// sync is a near-direct assignment. `suspended_billing` is app-specific: it's the state
-// after Stripe's dunning/retry schedule is exhausted (Stripe reports unpaid/canceled).
-enum SubscriptionStatus {
-  trialing
-  active
-  past_due
-  canceled
-  suspended_billing
 }
 
 enum MessageStatus {

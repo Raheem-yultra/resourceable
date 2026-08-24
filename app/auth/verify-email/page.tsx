@@ -70,7 +70,10 @@ function VerifyEmailContent() {
       const data = await response.json();
 
       if (response.ok) {
-        setResendMessage('Verification email sent! Please check your inbox.');
+        // Surface the server's wording rather than asserting a send: the endpoint
+        // answers identically for unknown and already-verified addresses so it
+        // can't be used to test which emails have accounts.
+        setResendMessage(data.message || 'If an account exists, a verification email is on its way.');
       } else {
         setResendMessage(data.error || 'Failed to resend email');
       }

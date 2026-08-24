@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { isBillingBlocked } from '@/lib/billing';
 import { listingTypeMeta } from '@/lib/listing-taxonomy';
 import { ReviewForm } from '@/components/listing/ReviewForm';
 import { ReportButton } from '@/components/listing/ReportButton';
@@ -38,7 +37,7 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
     relationLoadStrategy: 'join',
     where: { id: params.id },
     include: {
-      business: { select: { id: true, businessName: true, city: true, state: true, phone: true, email: true, website: true, verificationStatus: true, subscriptionStatus: true, isActive: true, userId: true } },
+      business: { select: { id: true, businessName: true, city: true, state: true, phone: true, email: true, website: true, verificationStatus: true, isActive: true, userId: true } },
       serviceTypes: { include: { serviceType: { select: { name: true, slug: true } } } },
       reviews: { where: { isPublished: true }, orderBy: { createdAt: 'desc' }, include: { user: { select: { name: true } } } },
     },
@@ -48,12 +47,11 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
 
   const isOwner = session?.user?.id === service.business.userId;
   const isAdmin = session?.user?.role === 'ADMIN';
-  // Publicly visible only if the provider is approved, active, and billing is healthy.
+  // Publicly visible only if the provider is approved and active.
   const publiclyVisible =
     service.isActive &&
     service.business.isActive &&
-    service.business.verificationStatus === 'APPROVED' &&
-    !isBillingBlocked(service.business.subscriptionStatus);
+    service.business.verificationStatus === 'APPROVED';
   if (!publiclyVisible && !isOwner && !isAdmin) notFound();
 
   const meta = listingTypeMeta(service.listingType);

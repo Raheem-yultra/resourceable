@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BusinessContactCard } from '@/components/business/BusinessContactCard';
-import { isBillingBlocked } from '@/lib/billing';
 
 interface BusinessPageProps {
   params: { id: string };
@@ -77,14 +76,10 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
     notFound();
   }
 
-  // Show to non-owners only when approved, active (not suspended), and billing
-  // is current. Lapsed billing (suspended/canceled) hides the listing publicly;
-  // the owner can still view their own page to reactivate.
+  // Show to non-owners only when approved and active (not suspended). The owner
+  // can always view their own page, whatever its review state.
   const isOwner = business.userId === session?.user?.id;
-  const publiclyVisible =
-    business.verificationStatus === 'APPROVED' &&
-    business.isActive &&
-    !isBillingBlocked(business.subscriptionStatus);
+  const publiclyVisible = business.verificationStatus === 'APPROVED' && business.isActive;
   if (!publiclyVisible && !isOwner) {
     notFound();
   }
@@ -350,8 +345,8 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
             {/* Contact & Location */}
             {/* Pass ONLY display-safe fields: this is a client component, so any
                 prop is serialized into the public page payload. The full `business`
-                row carries billing/PII fields (stripeCustomerId, taxId, adminNotes,
-                subscriptionStatus) that must never reach the browser. */}
+                row carries PII/internal fields (taxId, adminNotes, licenseNumber)
+                that must never reach the browser. */}
             <BusinessContactCard
               business={{
                 id: business.id,

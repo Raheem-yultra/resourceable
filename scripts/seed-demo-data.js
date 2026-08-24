@@ -1,6 +1,6 @@
 // Stakeholder demo seed: realistic-looking (but fictional) providers covering
 // EVERY listing type and subcategory, with multi-listing businesses, varied
-// verification tiers, active subscriptions, and real review rows that drive the
+// verification tiers and real review rows that drive the
 // rating aggregates. Idempotent — upserts by email / (businessId, slug) and
 // rebuilds mappings + reviews on each run.
 //
@@ -150,7 +150,7 @@ const PROVIDERS = [
     display: 'gentlecuts',
     description: 'A barbershop designed from the ground up for kids and adults who find haircuts overwhelming. Dimmed lights, no clipper surprises, visual schedules, and stylists trained in sensory-friendly techniques. First visits can be no-cut “meet the chair” sessions.',
     city: 'austin', address: '410 Congress Ave, Suite 120', year: 2019,
-    level: 'BASIC_VERIFIED', subscription: 'active', featured: false,
+    level: 'BASIC_VERIFIED', featured: false,
     disabilities: ['autism', 'sensory-processing-disorder', 'adhd'],
     hours: { 'Monday–Friday': '10:00 AM – 6:00 PM', Saturday: '9:00 AM – 3:00 PM', Sunday: 'Closed' },
     listings: [
@@ -167,7 +167,7 @@ const PROVIDERS = [
     display: 'brightsmilesdental',
     description: 'A dental practice dedicated to patients with developmental and physical disabilities. Board-certified pediatric and special-care dentists, wheelchair-accessible operatories, and desensitization visits that let patients get comfortable before any treatment begins.',
     city: 'chicago', address: '233 N Michigan Ave, Suite 900', year: 2012,
-    level: 'LICENSED', subscription: 'active', featured: true,
+    level: 'LICENSED', featured: true,
     disabilities: ['autism', 'down-syndrome', 'cerebral-palsy', 'intellectual-disability'],
     hours: { 'Monday–Thursday': '8:00 AM – 5:00 PM', Friday: '8:00 AM – 1:00 PM', 'Saturday–Sunday': 'Closed' },
     listings: [
@@ -184,7 +184,7 @@ const PROVIDERS = [
     display: 'harborviewfamilymed',
     description: 'Primary care built around neurodivergent patients and their families. Our physicians hold extra training in developmental-behavioral care, appointments are double-length by default, and our waiting room has a dedicated quiet space.',
     city: 'seattle', address: '1200 5th Ave, Suite 310', year: 2015,
-    level: 'LICENSED', subscription: 'active', featured: false,
+    level: 'LICENSED', featured: false,
     disabilities: ['autism', 'adhd', 'down-syndrome', 'intellectual-disability'],
     hours: { 'Monday–Friday': '8:00 AM – 6:00 PM', Saturday: '9:00 AM – 1:00 PM', Sunday: 'Closed' },
     listings: [
@@ -201,7 +201,7 @@ const PROVIDERS = [
     display: 'clearviewoptometry',
     description: 'Eye care for patients who can’t do a standard eye exam. We use objective testing methods that don’t rely on verbal responses, and our exam rooms are set up for wheelchair users and sensory-sensitive patients alike.',
     city: 'denver', address: '1660 Lincoln St, Suite 250', year: 2017,
-    level: 'LICENSED', subscription: 'active', featured: false,
+    level: 'LICENSED', featured: false,
     disabilities: ['autism', 'cerebral-palsy', 'visual-impairment', 'intellectual-disability'],
     hours: { 'Monday–Friday': '9:00 AM – 5:00 PM', 'Saturday–Sunday': 'Closed' },
     listings: [
@@ -217,7 +217,7 @@ const PROVIDERS = [
     display: 'nourishwell',
     description: 'Registered dietitians specializing in feeding challenges that come with autism, ADHD, and sensory processing differences. We build plans families can actually follow — no shame, no forced foods, just steady progress.',
     city: 'miami', address: '78 SW 7th St, Suite 500', year: 2020,
-    level: 'BASIC_VERIFIED', subscription: 'trialing', featured: false,
+    level: 'BASIC_VERIFIED', featured: false,
     disabilities: ['autism', 'adhd', 'sensory-processing-disorder'],
     hours: { 'Monday–Friday': '9:00 AM – 6:00 PM', 'Saturday–Sunday': 'Closed' },
     listings: [
@@ -233,7 +233,7 @@ const PROVIDERS = [
     display: 'helpinghandshc',
     description: 'Licensed home care agency providing trained aides for children and adults with developmental and physical disabilities. Every caregiver completes 40+ hours of disability-specific training and is matched to your family — not just assigned.',
     city: 'phoenix', address: '2020 N Central Ave, Suite 800', year: 2011,
-    level: 'BASIC_VERIFIED', subscription: 'active', featured: false,
+    level: 'BASIC_VERIFIED', featured: false,
     disabilities: ['cerebral-palsy', 'intellectual-disability', 'down-syndrome', 'autism'],
     hours: { 'Every day': '24 hours (office: Mon–Fri 8 AM – 5 PM)' },
     listings: [
@@ -250,7 +250,7 @@ const PROVIDERS = [
     display: 'serenitysalon',
     description: 'A full-service salon with private rooms, adjustable lighting, and stylists who specialize in clients with sensory sensitivities and mobility needs. Wheelchair-height stations and hoist-accessible wash basins throughout.',
     city: 'brooklyn', address: '145 Court St', year: 2021,
-    level: 'UNVERIFIED', subscription: 'active', featured: false,
+    level: 'UNVERIFIED', featured: false,
     disabilities: ['sensory-processing-disorder', 'autism', 'cerebral-palsy'],
     hours: { 'Tuesday–Saturday': '10:00 AM – 7:00 PM', 'Sunday–Monday': 'Closed' },
     listings: [
@@ -266,7 +266,7 @@ const PROVIDERS = [
     display: 'brightsteps',
     description: 'Speech, occupational, and feeding therapy under one roof, so families stop driving across town between appointments. Our clinicians co-treat and share one plan per child, and our sensory gym is open for practice between sessions.',
     city: 'la', address: '600 Wilshire Blvd, Suite 1500', year: 2014,
-    level: 'LICENSED', subscription: 'active', featured: true,
+    level: 'LICENSED', featured: true,
     disabilities: ['autism', 'speech-language-disorder', 'sensory-processing-disorder', 'down-syndrome'],
     hours: { 'Monday–Friday': '8:00 AM – 7:00 PM', Saturday: '8:00 AM – 2:00 PM', Sunday: 'Closed' },
     listings: [
@@ -283,7 +283,7 @@ const PROVIDERS = [
     display: 'spectrumaba',
     description: 'Center-based and in-home ABA with a compassionate, assent-based approach. Low caseloads, BCBAs on the floor daily, and parent coaching built into every treatment plan — because progress has to work at home, not just at the center.',
     city: 'dallas', address: '1717 Main St, Suite 4200', year: 2013,
-    level: 'LICENSED', subscription: 'active', featured: true,
+    level: 'LICENSED', featured: true,
     disabilities: ['autism', 'adhd'],
     hours: { 'Monday–Friday': '7:30 AM – 6:00 PM', 'Saturday–Sunday': 'Closed' },
     listings: [
@@ -301,7 +301,7 @@ const PROVIDERS = [
     display: 'moveforwardpt',
     description: 'Pediatric and adolescent physical therapy for kids with cerebral palsy, Down syndrome, hypotonia, and coordination disorders. Gait lab on site, aquatic therapy pool, and therapists who make hard work feel like play.',
     city: 'atlanta', address: '260 Peachtree St NW, Suite 1100', year: 2016,
-    level: 'LICENSED', subscription: 'active', featured: false,
+    level: 'LICENSED', featured: false,
     disabilities: ['cerebral-palsy', 'down-syndrome'],
     hours: { 'Monday–Friday': '8:00 AM – 6:30 PM', Saturday: '9:00 AM – 1:00 PM', Sunday: 'Closed' },
     listings: [
@@ -318,7 +318,7 @@ const PROVIDERS = [
     display: 'mindfulgrowth',
     description: 'Therapists who understand neurodivergence from the inside — several of our clinicians are neurodivergent themselves. Individual, family, and sibling counseling for the whole support system, in person or by video.',
     city: 'nyc', address: '295 Madison Ave, 12th Floor', year: 2018,
-    level: 'BASIC_VERIFIED', subscription: 'active', featured: false,
+    level: 'BASIC_VERIFIED', featured: false,
     disabilities: ['autism', 'adhd', 'learning-disability'],
     hours: { 'Monday–Thursday': '9:00 AM – 8:00 PM', Friday: '9:00 AM – 5:00 PM', 'Saturday–Sunday': 'Closed' },
     listings: [
@@ -335,7 +335,7 @@ const PROVIDERS = [
     display: 'harmonyhearts',
     description: 'Board-certified music therapists and registered art therapists using creativity as the doorway to communication, regulation, and joy. Individual sessions, group studios, and adaptive lessons for kids and adults of all abilities.',
     city: 'sd', address: '350 Tenth Ave, Suite 600', year: 2019,
-    level: 'BASIC_VERIFIED', subscription: 'active', featured: false,
+    level: 'BASIC_VERIFIED', featured: false,
     disabilities: ['autism', 'down-syndrome', 'intellectual-disability', 'sensory-processing-disorder'],
     hours: { 'Monday–Friday': '10:00 AM – 7:00 PM', Saturday: '9:00 AM – 3:00 PM', Sunday: 'Closed' },
     listings: [
@@ -352,7 +352,7 @@ const PROVIDERS = [
     display: 'ablegear',
     description: 'A family-run supplier of pediatric and adult mobility equipment with an on-staff ATP (Assistive Technology Professional). Try everything in our showroom, rent before you buy, and get real fitting help — not just a box in the mail.',
     city: 'houston', address: '3900 Essex Ln, Suite 150', year: 2008,
-    level: 'BASIC_VERIFIED', subscription: 'active', featured: false,
+    level: 'BASIC_VERIFIED', featured: false,
     disabilities: ['cerebral-palsy', 'down-syndrome', 'intellectual-disability'],
     hours: { 'Monday–Friday': '9:00 AM – 6:00 PM', Saturday: '10:00 AM – 4:00 PM', Sunday: 'Closed' },
     listings: [
@@ -370,7 +370,7 @@ const PROVIDERS = [
     display: 'sensoryhaven',
     description: 'Curated sensory tools tested by our own neurodivergent staff and family testers before they ever hit the shelf. Everything ships in quiet, easy-open packaging, and our “try it” guides help you use each tool well.',
     city: 'orlando', address: '55 W Church St, Suite 210', year: 2022,
-    level: 'UNVERIFIED', subscription: 'trialing', featured: false,
+    level: 'UNVERIFIED', featured: false,
     disabilities: ['autism', 'sensory-processing-disorder', 'adhd'],
     hours: { 'Monday–Saturday': '10:00 AM – 8:00 PM', Sunday: '11:00 AM – 5:00 PM' },
     listings: [
@@ -388,7 +388,7 @@ const PROVIDERS = [
     display: 'voicesaac',
     description: 'AAC evaluation, devices, and — most importantly — the coaching that makes them stick. Run by speech-language pathologists who specialize in augmentative communication, from first words on a board to full literacy on an eye-gaze system.',
     city: 'sj', address: '2 N Market St, Suite 400', year: 2015,
-    level: 'LICENSED', subscription: 'active', featured: true,
+    level: 'LICENSED', featured: true,
     disabilities: ['autism', 'cerebral-palsy', 'speech-language-disorder', 'intellectual-disability'],
     hours: { 'Monday–Friday': '9:00 AM – 5:30 PM', 'Saturday–Sunday': 'Closed' },
     listings: [
@@ -405,7 +405,7 @@ const PROVIDERS = [
     display: 'comfortfit',
     description: 'Clothing engineered for real bodies and real sensory needs: flat seams, tag-free everything, magnetic closures, and abdominal-access designs. Designed with input from a parent advisory board of 200+ families in the disability community.',
     city: 'chicago', address: '444 N Wabash Ave, Suite 300', year: 2020,
-    level: 'UNVERIFIED', subscription: 'active', featured: false,
+    level: 'UNVERIFIED', featured: false,
     disabilities: ['sensory-processing-disorder', 'autism', 'cerebral-palsy'],
     hours: { 'Monday–Friday': '9:00 AM – 5:00 PM (online orders 24/7)' },
     listings: [
@@ -422,7 +422,7 @@ const PROVIDERS = [
     display: 'steadynest',
     description: 'Handbuilt adaptive furniture from a Colorado workshop: safety beds, supportive seating, and height-adjustable tables that grow with your child. Every piece is customized to measurements you send us — and built to survive real family life.',
     city: 'denver', address: '2955 Inca St, Unit B', year: 2016,
-    level: 'BASIC_VERIFIED', subscription: 'active', featured: false,
+    level: 'BASIC_VERIFIED', featured: false,
     disabilities: ['autism', 'cerebral-palsy', 'intellectual-disability'],
     hours: { 'Monday–Friday': '8:00 AM – 4:30 PM', 'Saturday–Sunday': 'By appointment' },
     listings: [
@@ -439,7 +439,7 @@ const PROVIDERS = [
     display: 'pathwaysacademy',
     description: 'A state-certified nonpublic school for students with autism and related developmental disabilities. 3:1 student-staff ratios, on-site speech and OT, and an evidence-based curriculum that meets each student exactly where they are.',
     city: 'la', address: '4100 W Olympic Blvd', year: 2009,
-    level: 'LICENSED', subscription: 'active', featured: true,
+    level: 'LICENSED', featured: true,
     disabilities: ['autism', 'intellectual-disability', 'speech-language-disorder'],
     hours: { 'Monday–Friday': '8:00 AM – 3:00 PM (aftercare to 5:30 PM)' },
     listings: [
@@ -456,7 +456,7 @@ const PROVIDERS = [
     display: 'unitylearning',
     description: 'An intentionally inclusive private school where neurodivergent and neurotypical students learn side by side with co-teachers in every classroom. Universal Design for Learning isn’t a buzzword here — it’s the whole model.',
     city: 'austin', address: '2201 E Cesar Chavez St', year: 2014,
-    level: 'BASIC_VERIFIED', subscription: 'active', featured: false,
+    level: 'BASIC_VERIFIED', featured: false,
     disabilities: ['autism', 'adhd', 'learning-disability', 'down-syndrome'],
     hours: { 'Monday–Friday': '7:45 AM – 3:15 PM' },
     listings: [
@@ -472,7 +472,7 @@ const PROVIDERS = [
     display: 'risetutoring',
     description: 'Specialist tutors for students with dyslexia, ADHD, and learning differences — not generalists moonlighting. Orton-Gillingham certified reading instruction, multisensory math, and executive function coaching, in person or online.',
     city: 'nyc', address: '31 W 34th St, Suite 800', year: 2017,
-    level: 'BASIC_VERIFIED', subscription: 'active', featured: false,
+    level: 'BASIC_VERIFIED', featured: false,
     disabilities: ['learning-disability', 'adhd', 'autism'],
     hours: { 'Monday–Friday': '2:00 PM – 8:00 PM', Saturday: '9:00 AM – 3:00 PM', Sunday: 'Closed' },
     listings: [
@@ -489,7 +489,7 @@ const PROVIDERS = [
     display: 'nextsteptransition',
     description: 'The bridge between school and adult life. Our 18–22 and adult programs teach independent living, work skills, and community navigation through doing — in real apartments, real workplaces, and real transit, with coaching every step.',
     city: 'seattle', address: '999 Third Ave, Suite 2000', year: 2012,
-    level: 'LICENSED', subscription: 'active', featured: false,
+    level: 'LICENSED', featured: false,
     disabilities: ['intellectual-disability', 'autism', 'down-syndrome'],
     hours: { 'Monday–Friday': '8:30 AM – 4:30 PM' },
     listings: [
@@ -506,7 +506,7 @@ const PROVIDERS = [
     display: 'tinysteps',
     description: 'Birth-to-three services delivered where little ones learn best — at home and in play. Our transdisciplinary team (SLP, OT, PT, and developmental specialists) coaches caregivers so intervention happens all week, not just at appointments.',
     city: 'miami', address: '2103 Coral Way, Suite 400', year: 2015,
-    level: 'LICENSED', subscription: 'active', featured: false,
+    level: 'LICENSED', featured: false,
     disabilities: ['down-syndrome', 'autism', 'cerebral-palsy', 'speech-language-disorder'],
     hours: { 'Monday–Friday': '8:00 AM – 6:00 PM', Saturday: '9:00 AM – 12:00 PM', Sunday: 'Closed' },
     listings: [
@@ -522,7 +522,7 @@ const PROVIDERS = [
     display: 'togetherfamilies',
     description: 'A parent-founded nonprofit running support groups, workshops, and community programs for families in the disability community across the Valley. Most programs are free, childcare is provided at in-person events, and everyone is welcome exactly as they are.',
     city: 'phoenix', address: '1130 E Missouri Ave', year: 2010,
-    level: 'BASIC_VERIFIED', subscription: 'active', featured: false,
+    level: 'BASIC_VERIFIED', featured: false,
     disabilities: ['autism', 'down-syndrome', 'adhd', 'intellectual-disability'],
     hours: { 'Monday–Friday': '9:00 AM – 5:00 PM (events evenings/weekends)' },
     listings: [
@@ -539,7 +539,7 @@ const PROVIDERS = [
     display: 'campevergreen',
     description: 'An accredited adaptive camp in the foothills outside Denver: 1:2 counselor ratios, a nurse on site 24/7, and every activity — climbing, canoeing, campfires — adapted so every camper participates for real, not from the sidelines.',
     city: 'denver', address: '18300 W Colfax Ave (camp office)', year: 2007,
-    level: 'LICENSED', subscription: 'active', featured: true,
+    level: 'LICENSED', featured: true,
     disabilities: ['autism', 'down-syndrome', 'cerebral-palsy', 'intellectual-disability'],
     hours: { 'Office: Monday–Friday': '9:00 AM – 5:00 PM' },
     listings: [
@@ -556,7 +556,7 @@ const PROVIDERS = [
     display: 'hopeaccess',
     description: 'A community foundation making Atlanta more accessible one event at a time — sensory-friendly outings, adaptive sports, and an annual walk that funds grants for local families. Every event is free or pay-what-you-can.',
     city: 'atlanta', address: '100 Edgewood Ave NE, Suite 1500', year: 2013,
-    level: 'BASIC_VERIFIED', subscription: 'active', featured: false,
+    level: 'BASIC_VERIFIED', featured: false,
     disabilities: ['autism', 'down-syndrome', 'cerebral-palsy', 'sensory-processing-disorder'],
     hours: { 'Monday–Friday': '9:00 AM – 5:00 PM (events weekends)' },
     listings: [
@@ -573,7 +573,7 @@ const PROVIDERS = [
     display: 'advocacyalliance',
     description: 'Special education attorneys and certified advocates helping families get the services their children are legally entitled to. Free clinics monthly, sliding-scale representation, and workshops that turn parents into confident advocates.',
     city: 'chicago', address: '77 W Washington St, Suite 1800', year: 2011,
-    level: 'LICENSED', subscription: 'active', featured: false,
+    level: 'LICENSED', featured: false,
     disabilities: ['autism', 'learning-disability', 'adhd', 'intellectual-disability'],
     hours: { 'Monday–Friday': '9:00 AM – 5:00 PM' },
     listings: [
@@ -708,18 +708,14 @@ function businessData(p, index, approved) {
     contactCount: pickInt(rng, 6, 95),
   };
   if (!approved) {
-    return { ...base, verificationStatus: 'PENDING', verificationLevel: 'UNVERIFIED', isFeatured: false, subscriptionStatus: null };
+    return { ...base, verificationStatus: 'PENDING', verificationLevel: 'UNVERIFIED', isFeatured: false };
   }
-  const billing = p.subscription === 'trialing'
-    ? { subscriptionStatus: 'trialing', trialEndsAt: daysFromNow(12), trialUsedAt: new Date(), currentPeriodEnd: daysFromNow(12) }
-    : { subscriptionStatus: 'active', trialUsedAt: daysFromNow(-200), trialEndsAt: daysFromNow(-170), currentPeriodEnd: daysFromNow(21) };
   return {
     ...base,
     verificationStatus: 'APPROVED',
     verifiedAt: daysFromNow(-pickInt(rng, 60, 500)),
     verificationLevel: p.level,
     isFeatured: !!p.featured,
-    ...billing,
   };
 }
 

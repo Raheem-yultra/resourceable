@@ -10,10 +10,6 @@ const querySchema = z.object({
   search: z.string().trim().max(200).optional(),
   dateFrom: z.string().datetime().optional(),
   dateTo: z.string().datetime().optional(),
-  // Optional billing filter. 'none' targets approved providers with no subscription row yet.
-  subscriptionStatus: z
-    .enum(['trialing', 'active', 'past_due', 'canceled', 'suspended_billing', 'none'])
-    .optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -28,7 +24,6 @@ export async function GET(request: NextRequest) {
       search: searchParams.get('search') || undefined,
       dateFrom: searchParams.get('dateFrom') || undefined,
       dateTo: searchParams.get('dateTo') || undefined,
-      subscriptionStatus: searchParams.get('subscriptionStatus') || undefined,
     });
 
     if (!parsed.success) {
@@ -47,12 +42,6 @@ export async function GET(request: NextRequest) {
         dateTo: parsed.data.dateTo ? new Date(parsed.data.dateTo) : undefined,
       }
     );
-
-    // Optional billing filter: 'none' = no subscription row yet; otherwise exact status.
-    if (parsed.data.subscriptionStatus) {
-      where.subscriptionStatus =
-        parsed.data.subscriptionStatus === 'none' ? null : parsed.data.subscriptionStatus;
-    }
 
     const businesses = await prisma.business.findMany({
       where,

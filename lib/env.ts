@@ -25,10 +25,9 @@ export const isProduction = (): boolean => process.env.NODE_ENV === 'production'
 /**
  * Canonical public origin, without a trailing slash.
  *
- * Used for every link we email (verification, password reset) and for Stripe
- * redirect URLs. In production a missing value throws instead of falling back to
- * localhost, because a localhost link in a real user's inbox is worse than a
- * logged error.
+ * Used for every link we email (verification, password reset, provider approval).
+ * In production a missing value throws instead of falling back to localhost,
+ * because a localhost link in a real user's inbox is worse than a logged error.
  */
 export function getAppBaseUrl(): string {
   const url = process.env.NEXTAUTH_URL?.trim();
@@ -36,7 +35,7 @@ export function getAppBaseUrl(): string {
   if (isProduction()) {
     throw new Error(
       'NEXTAUTH_URL is not set. It is required in production: every emailed link ' +
-        'and Stripe redirect is built from it.'
+        'is built from it.'
     );
   }
   return DEV_BASE_URL;
@@ -85,12 +84,9 @@ export function checkProductionConfig(env: NodeJS.ProcessEnv = process.env): Con
     ['DATABASE_URL', 'Prisma cannot reach the database without it.'],
     ['DIRECT_URL', 'Prisma migrations/db push need the non-pooled connection.'],
     ['NEXTAUTH_SECRET', 'Sessions cannot be signed without it.'],
-    ['NEXTAUTH_URL', 'Every emailed link and Stripe redirect is built from it.'],
+    ['NEXTAUTH_URL', 'Every emailed link is built from it.'],
     ['RESEND_API_KEY', 'All transactional email silently fails without it.'],
     ['EMAIL_FROM', 'Unset falls back to the Resend sandbox sender, which delivers to nobody.'],
-    ['STRIPE_SECRET_KEY', 'Billing cannot run without it.'],
-    ['STRIPE_PRICE_ID', 'Checkout has no plan to subscribe to.'],
-    ['STRIPE_WEBHOOK_SECRET', 'Webhook signatures cannot be verified.'],
   ] as const;
 
   for (const [key, why] of required) {
@@ -127,15 +123,6 @@ export function checkProductionConfig(env: NodeJS.ProcessEnv = process.env): Con
       key: 'SUPPORT_EMAIL',
       level: 'warning',
       message: `Not set; Reply-To on all outbound mail defaults to ${DEFAULT_SUPPORT_EMAIL}. Replies bounce if that mailbox does not exist.`,
-    });
-  }
-
-  const stripeKey = val('STRIPE_SECRET_KEY');
-  if (stripeKey.startsWith('sk_test_')) {
-    problems.push({
-      key: 'STRIPE_SECRET_KEY',
-      level: 'warning',
-      message: 'Is a TEST key. Real cards will not be charged. Swap to the live key on launch day.',
     });
   }
 

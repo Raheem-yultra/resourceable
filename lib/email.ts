@@ -819,18 +819,18 @@ export async function sendBusinessRemovedEmail({ email, name, businessName, reas
 }
 
 // ---------------------------------------------------------------------------
-// Billing notifications (approval → set up billing, trial ending, payment failed).
+// Provider lifecycle notifications (approval).
 // ---------------------------------------------------------------------------
 
-interface BillingEmailProps {
+interface ProviderNotificationProps {
   email: string;
   name: string;
   businessName: string;
   actionUrl: string;
-  trialEndsAt?: Date | null;
 }
 
-function billingHtml(opts: {
+/** Shared shell for a notification whose whole point is a single call to action. */
+function ctaNotificationHtml(opts: {
   accent: string;
   emoji: string;
   heading: string;
@@ -864,78 +864,31 @@ function billingHtml(opts: {
     </html>`;
 }
 
-/** Sent when an admin approves a provider — prompts them to add a card and start the trial. */
-export async function sendProviderApprovedBillingEmail({ email, name, businessName, actionUrl }: BillingEmailProps) {
+/**
+ * Sent when an admin approves a provider. Approval is the last gate before a
+ * provider goes live, so this confirms they are visible to families rather than
+ * asking them for anything further.
+ */
+export async function sendProviderApprovedEmail({ email, name, businessName, actionUrl }: ProviderNotificationProps) {
   const safeBusiness = escapeHtml(businessName);
   const { error } = await getResendClient().emails.send({
     from: getEmailFrom(),
     to: email,
     replyTo: getSupportEmail(),
-    subject: `${businessName} is approved — start your 30-day free trial`,
-    html: billingHtml({
+    subject: `${businessName} is approved - you're live on ResourceAble`,
+    html: ctaNotificationHtml({
       accent: '#0e7490',
       emoji: '🎉',
       heading: "You're Approved!",
       greeting: `Hello ${name || 'Business Owner'},`,
-      bodyHtml: `<p><strong>${safeBusiness}</strong> has been approved on ResourceAble. To go live, add a payment method to start your <strong>30-day free trial</strong>. You won't be charged until the trial ends, and you can cancel anytime.</p>`,
-      ctaLabel: 'Set Up Billing & Start Trial',
+      bodyHtml: `<p><strong>${safeBusiness}</strong> has been approved on ResourceAble. Your listings are now visible to families searching the directory, and you can respond to their messages from your dashboard.</p><p>Keeping your ages, categories, and availability current is what keeps you showing up in the right results.</p>`,
+      ctaLabel: 'Go to Your Dashboard',
       ctaUrl: actionUrl,
     }),
   });
   if (error) {
-    console.error('Resend approval-billing email error:', error);
+    console.error('Resend provider-approved email error:', error);
     throw new Error('Failed to send approval email');
-  }
-  return { success: true };
-}
-
-/** Sent ~3 days before the trial ends (Stripe trial_will_end). Does not change status. */
-export async function sendTrialEndingEmail({ email, name, businessName, actionUrl, trialEndsAt }: BillingEmailProps) {
-  const safeBusiness = escapeHtml(businessName);
-  const when = trialEndsAt ? escapeHtml(trialEndsAt.toLocaleDateString()) : 'soon';
-  const { error } = await getResendClient().emails.send({
-    from: getEmailFrom(),
-    to: email,
-    replyTo: getSupportEmail(),
-    subject: 'Your ResourceAble free trial is ending soon',
-    html: billingHtml({
-      accent: '#f97316',
-      emoji: '⏳',
-      heading: 'Trial Ending Soon',
-      greeting: `Hello ${name || 'Business Owner'},`,
-      bodyHtml: `<p>Your free trial for <strong>${safeBusiness}</strong> ends on <strong>${when}</strong>. Your subscription will begin automatically using the card on file — no action needed to keep your listing live. To review or update your payment method, use the button below.</p>`,
-      ctaLabel: 'Manage Billing',
-      ctaUrl: actionUrl,
-    }),
-  });
-  if (error) {
-    console.error('Resend trial-ending email error:', error);
-    throw new Error('Failed to send trial-ending email');
-  }
-  return { success: true };
-}
-
-/** Sent on invoice.payment_failed — provider goes past_due and needs to fix their card. */
-export async function sendPaymentFailedEmail({ email, name, businessName, actionUrl }: BillingEmailProps) {
-  const safeBusiness = escapeHtml(businessName);
-  const { error } = await getResendClient().emails.send({
-    from: getEmailFrom(),
-    to: email,
-    replyTo: getSupportEmail(),
-    subject: 'Action needed: payment failed for your ResourceAble subscription',
-    html: billingHtml({
-      accent: '#dc2626',
-      emoji: '⚠️',
-      heading: 'Payment Failed',
-      greeting: `Hello ${name || 'Business Owner'},`,
-      bodyHtml: `<p>We couldn't process the payment for <strong>${safeBusiness}</strong>. Your listing is still visible for now, but please update your payment method to avoid interruption. We'll retry automatically, and if all retries fail your listing will be suspended.</p>`,
-      ctaLabel: 'Update Payment Method',
-      ctaUrl: actionUrl,
-    }),
-  });
-  if (error) {
-    console.error('Resend payment-failed email error:', error);
-    throw new Error('Failed to send payment-failed email');
   }
   return { success: true };
 }

@@ -3,9 +3,8 @@
  * Production preflight.
  *
  * Answers one question: "if I deploy this environment right now, what breaks?"
- * Runs static config checks plus LIVE checks against Resend, Stripe, and the
- * database. Read-only throughout — it sends no email, creates no Stripe object,
- * and writes nothing to the database.
+ * Runs static config checks plus LIVE checks against Resend and the database.
+ * Read-only throughout — it sends no email and writes nothing to the database.
  *
  *   npm run preflight              # check .env.local
  *   npm run preflight -- --env     # check the ambient environment (CI / Vercel)
@@ -61,12 +60,9 @@ const REQUIRED = [
   ['DATABASE_URL', 'Prisma cannot reach the database.'],
   ['DIRECT_URL', 'Prisma db push / migrations need the non-pooled connection.'],
   ['NEXTAUTH_SECRET', 'Sessions cannot be signed.'],
-  ['NEXTAUTH_URL', 'Every emailed link and Stripe redirect is built from it.'],
+  ['NEXTAUTH_URL', 'Every emailed link is built from it.'],
   ['RESEND_API_KEY', 'All transactional email silently fails.'],
   ['EMAIL_FROM', 'Falls back to the Resend sandbox sender, which delivers to nobody.'],
-  ['STRIPE_SECRET_KEY', 'Billing cannot run.'],
-  ['STRIPE_PRICE_ID', 'Checkout has no plan to subscribe to.'],
-  ['STRIPE_WEBHOOK_SECRET', 'Webhook signatures cannot be verified.'],
 ];
 
 for (const [key, why] of REQUIRED) {
@@ -169,44 +165,7 @@ if (resendKey) {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Live check: Stripe (read-only)
-// ---------------------------------------------------------------------------
-
-const stripeKey = val('STRIPE_SECRET_KEY');
-if (stripeKey) {
-  const isTestKey = stripeKey.startsWith('sk_test_');
-  if (isTestKey) warn('billing', 'STRIPE_SECRET_KEY is a TEST key — real cards will not be charged.');
-
-  const priceId = val('STRIPE_PRICE_ID');
-  if (priceId) {
-    try {
-      const res = await fetch(`https://api.stripe.com/v1/prices/${encodeURIComponent(priceId)}`, {
-        headers: { Authorization: `Bearer ${stripeKey}` },
-      });
-      if (res.status === 200) {
-        const price = await res.json();
-        const amount = price.unit_amount != null ? `${(price.unit_amount / 100).toFixed(2)} ${String(price.currency).toUpperCase()}` : 'n/a';
-        ok('billing', `STRIPE_PRICE_ID resolves (${amount}/${price.recurring?.interval ?? 'one-off'}, livemode=${price.livemode})`);
-        if (price.livemode === isTestKey) {
-          fail('billing', `Key/price mode mismatch: key is ${isTestKey ? 'test' : 'live'} but price livemode=${price.livemode}.`, 'Use a price created in the same mode as the secret key.');
-        }
-        if (!price.active) fail('billing', 'STRIPE_PRICE_ID is archived/inactive.', 'Create or activate a price and update STRIPE_PRICE_ID.');
-      } else {
-        const body = await res.text();
-        fail('billing', `Stripe rejected the price lookup (HTTP ${res.status}): ${body.slice(0, 160)}`, 'Check STRIPE_SECRET_KEY and STRIPE_PRICE_ID.');
-      }
-    } catch (e) {
-      warn('billing', `Could not reach the Stripe API (${e.message}).`);
-    }
-  }
-
-  if (!val('STRIPE_WEBHOOK_SECRET').startsWith('whsec_')) {
-    warn('billing', 'STRIPE_WEBHOOK_SECRET does not look like a signing secret (expected whsec_…).');
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 4. Live check: database (read-only)
+// 3. Live check: database (read-only)
 // ---------------------------------------------------------------------------
 
 if (val('DATABASE_URL')) {

@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { serviceService } from '@/services/service.service';
 import { businessService } from '@/services/business.service';
 import { listingSchema } from '@/lib/validations';
-import { isBillingBlocked } from '@/lib/billing';
+import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
   try {
@@ -36,17 +36,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // A provider legitimately creates several listings, but not dozens a minute;
+    // this bounds a runaway client or a scripted flood of the public directory.
+    const rl = rateLimit(`listing:${session.user.id}`, 30, 60 * 60_000);
+    if (!rl.allowed) return tooManyRequests(rl.retryAfterSeconds);
+
     const business = await businessService.getBusinessByUserId(session.user.id);
     if (!business) {
       return NextResponse.json({ error: 'Business not found' }, { status: 404 });
-    }
-
-    // Block listing creation when billing has lapsed (suspended/canceled).
-    if (isBillingBlocked(business.subscriptionStatus)) {
-      return NextResponse.json(
-        { error: 'Your subscription is inactive. Reactivate billing to manage listings.', code: 'BILLING_INACTIVE' },
-        { status: 403 }
-      );
     }
 
     const body = await req.json();
