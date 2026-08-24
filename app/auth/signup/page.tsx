@@ -377,6 +377,18 @@ export default function SignUpPage() {
               <Link href="/auth/signin">Sign In</Link>
             </Button>
           </form>
+
+          {/* The site header is hidden on this screen, so this is the only way back
+              out of it. Without it the page is a dead end for anyone who arrived
+              here by mistake or changed their mind. */}
+          <div className="mt-6 text-center">
+            <Link
+              href="/"
+              className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Back to ResourceAble
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
