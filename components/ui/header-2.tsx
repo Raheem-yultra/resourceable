@@ -83,6 +83,15 @@ export function Header() {
 	const links = getLinks();
 	// Show the marketplace browse nav for guests and families (not providers/admins).
 	const showMarketplace = !session || session.user.role === 'USER';
+	// The auth pages ARE the sign-in / create-account flow, and each already links
+	// to the other in its own card. Repeating the pair in the nav points at the page
+	// the user is already on. The rest of the nav stays so there is still a way back
+	// out — these pages have no other link to the site.
+	const isAuthPage = pathname.startsWith('/auth');
+	const showAuthCtas = !session && !isAuthPage;
+	// Same rule on the signed-in side: /auth/signout IS the sign-out action, so a
+	// Sign Out button there points at the page the user is already on.
+	const showSignOut = !!session && pathname !== '/auth/signout';
 	const isActiveLink = (href: string) => {
 		if (href.startsWith('#')) {
 			return pathname === '/';
@@ -186,19 +195,18 @@ export function Header() {
 							{link.label}
 						</Link>
 					))}
-					{session ? (
-						<>
-							<Button variant="ghost" asChild>
-								<Link href="/auth/signout">Sign Out</Link>
-							</Button>
-						</>
-					) : (
+					{showSignOut && (
+						<Button variant="ghost" asChild>
+							<Link href="/auth/signout">Sign Out</Link>
+						</Button>
+					)}
+					{showAuthCtas && (
 						<>
 							<Button variant="ghost" asChild>
 								<Link href="/auth/signin">Sign In</Link>
 							</Button>
 							<Button asChild>
-								<Link href="/auth/signup">Get Started</Link>
+								<Link href="/auth/signup">Create account</Link>
 							</Button>
 						</>
 					)}
@@ -269,17 +277,18 @@ export function Header() {
 					</div>
 					<div className="flex flex-row gap-2">
 						<ThemeToggle />
-						{session ? (
+						{showSignOut && (
 							<Button variant="ghost" className="flex-1 min-h-[44px]" asChild>
 								<Link href="/auth/signout" onClick={() => setOpen(false)}>Sign Out</Link>
 							</Button>
-						) : (
+						)}
+						{showAuthCtas && (
 							<>
 								<Button variant="ghost" className="flex-1 min-h-[44px]" asChild>
 									<Link href="/auth/signin" onClick={() => setOpen(false)}>Sign In</Link>
 								</Button>
 								<Button className="flex-1 min-h-[44px]" asChild>
-									<Link href="/auth/signup" onClick={() => setOpen(false)}>Get Started</Link>
+									<Link href="/auth/signup" onClick={() => setOpen(false)}>Create account</Link>
 								</Button>
 							</>
 						)}

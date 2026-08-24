@@ -24,7 +24,10 @@ export function ThemeToggle() {
   return (
     <Button
       type="button"
-      variant="outline"
+      // `ghost`, not `outline`: every other control in the nav is ghost, so an
+      // outlined box around this one read as a separate widget bolted on rather
+      // than one more nav item.
+      variant="ghost"
       size="icon"
       onClick={toggleTheme}
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
