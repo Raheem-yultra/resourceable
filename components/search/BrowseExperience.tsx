@@ -120,14 +120,14 @@ export function BrowseExperience({
     [sortBy]
   );
 
-  const handleSearch = useCallback(
+  // The request itself. Nothing here runs before the fetch except the request-id
+  // bump and the abort timer, neither of which is component state — so the mount
+  // effect below can call it without writing state during the effect body.
+  const performSearch = useCallback(
     async (filters: any, cat: BrowseCategory | undefined = category) => {
       const reqId = ++reqIdRef.current;
       const isCurrent = () => reqId === reqIdRef.current;
-      setLoading(true);
-      setError(null);
       const announcement = document.getElementById('search-announcement');
-      if (announcement) announcement.textContent = 'Searching for listings...';
 
       // Never let a hung request spin forever: abort after 15s so the user gets a
       // retryable error instead of a frozen spinner.
@@ -183,11 +183,31 @@ export function BrowseExperience({
     [buildParams, category]
   );
 
-  // Initial load + re-search on sort change.
+  // Every user-initiated search goes through here: it shows the spinner straight
+  // away, which is exactly the kind of state change an event handler should make.
+  const handleSearch = useCallback(
+    (filters: any, cat: BrowseCategory | undefined = category) => {
+      setLoading(true);
+      setError(null);
+      const announcement = document.getElementById('search-announcement');
+      if (announcement) announcement.textContent = 'Searching for listings...';
+      return performSearch(filters, cat);
+    },
+    [performSearch, category]
+  );
+
+  // Initial load only. `loading` already starts true and `error` starts null, so
+  // this needs no state write of its own — the sort control re-searches from its
+  // own handler rather than routing the change back through an effect.
   useEffect(() => {
-    handleSearch({ query: searchQuery, ...activeFilters });
+    // set-state-in-effect is a false positive here: every state write inside
+    // performSearch happens after `await fetch(...)`, but the rule cannot see
+    // through the async useCallback and assumes they are reachable synchronously.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void performSearch({ query: searchQuery, ...activeFilters });
+    // Mount-only on purpose: later searches are driven by their own handlers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortBy]);
+  }, []);
 
   // Load the knowledge base only for categories that surface it, and only once
   // per visit — resources are editorial and don't change between searches.
@@ -329,7 +349,12 @@ export function BrowseExperience({
                     // would only contradict it — so it isn't offered.
                     hideAgeFilter={!!category?.ageGroup}
                     sortBy={sortBy}
-                    onSortChange={(value) => setSortBy(value as SortOption)}
+                    onSortChange={(value) => {
+                      setSortBy(value as SortOption);
+                      // Pass the new sort explicitly: `sortBy` state has not updated
+                      // yet, and buildParams prefers filters.sortBy when present.
+                      handleSearch({ query: searchQuery, ...activeFilters, sortBy: value });
+                    }}
                     onSearch={(filters) => { handleSearch({ query: searchQuery, ...filters }); setShowFilters(false); }}
                   />
                 </SheetContent>

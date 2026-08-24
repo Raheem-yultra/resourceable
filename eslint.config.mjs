@@ -12,21 +12,14 @@ const config = [
       'react/no-unescaped-entities': 'off',
       '@next/next/no-img-element': 'off',
 
-      // Catches stale-closure bugs. The three sites it currently reports were each
-      // checked by hand and read only values already in their dependency array.
+      // Catches stale-closure bugs. Kept as a warning because the remaining
+      // intentional exception (a mount-only effect) is marked inline.
       'react-hooks/exhaustive-deps': 'warn',
 
-      // A React Compiler rule, new in eslint-config-next 16 and error-by-default.
-      // It fires on 15 pre-existing sites, almost all the same shape: an effect on
-      // mount calls a loader that flips `setLoading(true)` before awaiting. The
-      // pattern is sound but does cost one extra render.
-      //
-      // Downgraded rather than silenced, and deliberately NOT fixed here: undoing it
-      // properly means moving those components onto a real data-fetching approach
-      // (Suspense + `use`, or a query library), which is its own change and does not
-      // belong inside a framework upgrade where it would be impossible to review.
-      // Left visible so it stays on the list.
-      'react-hooks/set-state-in-effect': 'warn',
+      // Back at error (its eslint-config-next default) now that every site is
+      // fixed. The one remaining exception is marked inline in BrowseExperience,
+      // where the rule cannot see past an async useCallback.
+      'react-hooks/set-state-in-effect': 'error',
     },
   },
 ];

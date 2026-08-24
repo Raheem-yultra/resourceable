@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
+import { useAsyncData } from '@/hooks/use-async-data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollText } from 'lucide-react';
@@ -38,34 +39,28 @@ const ACTION_FILTERS = [
 ];
 
 export function AuditLog() {
-  const [rows, setRows] = useState<AdminActionRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [action, setAction] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  // Paging and filtering both refetch, and both are easy to click faster than the
+  // request returns — the abort in useAsyncData is what keeps an older page from
+  // overwriting a newer one.
+  const { data, loading, error } = useAsyncData<{
+    actions: AdminActionRow[];
+    pagination?: { totalPages?: number };
+  }>(
+    async (signal) => {
       const params = new URLSearchParams({ page: String(page), limit: '25' });
       if (action) params.set('action', action);
-      const res = await fetch(`/api/admin/audit?${params.toString()}`);
+      const res = await fetch(`/api/admin/audit?${params.toString()}`, { signal });
       if (!res.ok) throw new Error('Failed to load audit log');
-      const data = await res.json();
-      setRows(data.actions || []);
-      setTotalPages(data.pagination?.totalPages || 1);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load audit log');
-    } finally {
-      setLoading(false);
-    }
-  }, [action, page]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+      return res.json();
+    },
+    [action, page],
+    'Failed to load audit log'
+  );
+  const rows = data?.actions ?? [];
+  const totalPages = data?.pagination?.totalPages || 1;
 
   return (
     <Card>

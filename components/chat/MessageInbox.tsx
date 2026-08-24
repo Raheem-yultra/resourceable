@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useAsyncData } from '@/hooks/use-async-data';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,31 +33,26 @@ interface MessageInboxProps {
 }
 
 export function MessageInbox({ currentUserId }: MessageInboxProps) {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'sent' | 'received'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchConversations = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/messages?type=${filter}`);
-      if (response.ok) {
-        const data = await response.json();
-        setConversations(data.conversations);
-        setUnreadCount(data.unreadCount);
-      }
-    } catch (error) {
-      console.error('Failed to fetch conversations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchConversations();
-  }, [filter]);
+  const {
+    data,
+    loading,
+    reload: fetchConversations,
+  } = useAsyncData<{
+    conversations: Conversation[];
+    unreadCount: number;
+  }>(
+    async (signal) => {
+      const response = await fetch(`/api/messages?type=${filter}`, { signal });
+      if (!response.ok) throw new Error('Failed to fetch conversations');
+      return response.json();
+    },
+    [filter]
+  );
+  const conversations = data?.conversations ?? [];
+  const unreadCount = data?.unreadCount ?? 0;
 
 
   const filteredConversations = conversations.filter((conv) => {

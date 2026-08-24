@@ -57,12 +57,14 @@ const SECTIONS = [
   { id: 'hours', label: 'Hours' },
 ] as const;
 
+const NO_FIELD_ERRORS: Record<string, string> = {};
+const FIX_FIELDS_MESSAGE = 'Please fix the highlighted fields before saving.';
+
 export function BusinessProfileForm({ business, userId }: BusinessProfileFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   // Disability options come from the DB so their slugs match what the API expects.
@@ -128,20 +130,26 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
     return errs;
   };
 
-  // Once the user has attempted submit, keep errors live as they fix each field.
-  useEffect(() => {
-    if (!hasSubmitted) return;
-    const errs = validate(formData);
-    setFieldErrors(errs);
-    // Drop the summary banner once the last field is fixed, so it never says
-    // "fix the highlighted fields" when nothing is highlighted any more.
-    if (Object.keys(errs).length === 0) setError('');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData, hasSubmitted]);
+  // Derived, never stored. Once the provider has attempted a submit, the errors are
+  // simply what validate() says about the current form — mirroring that into state
+  // from an effect meant a second render on every keystroke to reach the same answer.
+  // One validation pass per render feeds both of the things below. It is only
+  // string checks over a dozen fields, so memoising it cost more in ceremony than
+  // it saved — and the memo could not list `validate` as a dependency anyway.
+  const currentErrors = validate(formData);
+
+  // Errors are shown once the provider has actually tried to submit; before that
+  // the form stays quiet.
+  const fieldErrors = hasSubmitted ? currentErrors : NO_FIELD_ERRORS;
+
+  // The summary banner is only meaningful while something is still highlighted, so
+  // it hides itself as the last field is fixed rather than being cleared by hand.
+  const visibleError =
+    error === FIX_FIELDS_MESSAGE && Object.keys(fieldErrors).length === 0 ? '' : error;
 
   // Live count of what is still required, so the provider always knows how far off
   // they are rather than discovering it at submit time.
-  const remaining = useMemo(() => Object.keys(validate(formData)).length, [formData]);
+  const remaining = Object.keys(currentErrors).length;
 
   // The four fields we can actually check against an outside source. Shown as a
   // strength meter because "optional" reads as "skip me", and skipping all four
@@ -161,9 +169,8 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
     setHasSubmitted(true);
 
     const errs = validate(formData);
-    setFieldErrors(errs);
     if (Object.keys(errs).length > 0) {
-      setError('Please fix the highlighted fields before saving.');
+      setError(FIX_FIELDS_MESSAGE);
       document.getElementById(Object.keys(errs)[0])?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
@@ -233,9 +240,9 @@ export function BusinessProfileForm({ business, userId }: BusinessProfileFormPro
         </div>
       )}
 
-      {error && (
+      {visibleError && (
         <div className="theme-danger p-4" role="alert">
-          {error}
+          {visibleError}
         </div>
       )}
 

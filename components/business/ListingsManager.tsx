@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useAsyncData } from '@/hooks/use-async-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -22,31 +23,25 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
  * families independently. Listings are grouped by type here so a provider with a
  * dozen of them can still see their catalogue at a glance.
  */
+const NO_LISTINGS: any[] = [];
+
 export function ListingsManager() {
-  const [listings, setListings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list');
   const [editing, setEditing] = useState<any>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/services');
-      if (res.ok) {
-        setListings((await res.json()).services || []);
-        setBlocked(null);
-      }
-    } finally {
-      setLoading(false);
-    }
+  const {
+    data,
+    loading,
+    reload: load,
+  } = useAsyncData<{ services: any[] }>(async (signal) => {
+    const res = await fetch('/api/services', { signal });
+    if (!res.ok) throw new Error('Failed to load listings');
+    return res.json();
   }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const listings = data?.services ?? NO_LISTINGS;
 
   // Grouped by listing type, in the taxonomy's own order, so the catalogue reads
   // the same way the family-facing browse tabs do.

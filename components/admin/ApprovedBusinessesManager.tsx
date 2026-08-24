@@ -108,23 +108,31 @@ export function ApprovedBusinessesManager() {
     }
   };
 
-  const fetchApprovedBusinesses = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/admin/businesses/approved');
-      if (response.ok) {
-        const data = await response.json();
-        setBusinesses(data.businesses);
-      }
-    } catch (error) {
-      console.error('Failed to fetch approved businesses:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // `loading` already starts true, so the old `setLoading(true)` here was a state
+  // write during the effect body that set it to the value it already had. Every
+  // write below now happens after the await instead, and the request is aborted on
+  // unmount so nothing lands on a component that has gone away.
   useEffect(() => {
-    fetchApprovedBusinesses();
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const response = await fetch('/api/admin/businesses/approved', {
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (controller.signal.aborted) return;
+        setBusinesses(data.businesses);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error('Failed to fetch approved businesses:', error);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    })();
+
+    return () => controller.abort();
   }, []);
 
   const filteredBusinesses = businesses.filter((b) => {

@@ -63,12 +63,14 @@ const toggle = (arr: string[], v: string) => (arr.includes(v) ? arr.filter((x) =
  * questions — what kind of thing, what it is, who it is for, what it costs — so a
  * provider adding their fifth listing can move through it without re-reading.
  */
+const NO_FIELD_ERRORS: Record<string, string> = {};
+const FIX_FIELDS_MESSAGE = 'Please fix the highlighted fields.';
+
 export function ListingForm({ listing, onSaved, onCancel }: ListingFormProps) {
   const [serviceTypeOptions, setServiceTypeOptions] = useState<any[]>([]);
   const [disabilityOptions, setDisabilityOptions] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const [form, setForm] = useState(() => ({
@@ -149,16 +151,16 @@ export function ListingForm({ listing, onSaved, onCancel }: ListingFormProps) {
     return errs;
   };
 
-  useEffect(() => {
-    if (!hasSubmitted) return;
-    const errs = validate(form);
-    setFieldErrors(errs);
-    // Drop the summary banner once the last field is fixed — leaving "please fix
-    // the highlighted fields" up when nothing is highlighted any more reads as a
-    // form that will not let you through.
-    if (Object.keys(errs).length === 0) setError('');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, hasSubmitted]);
+  // Derived, never stored. The effect that mirrored these into state re-rendered
+  // the whole form a second time on every keystroke just to arrive at the same
+  // answer validate() already gives during render.
+  const fieldErrors = hasSubmitted ? validate(form) : NO_FIELD_ERRORS;
+
+  // Drop the summary banner once the last field is fixed — leaving "please fix the
+  // highlighted fields" up when nothing is highlighted any more reads as a form
+  // that will not let you through.
+  const visibleError =
+    error === FIX_FIELDS_MESSAGE && Object.keys(fieldErrors).length === 0 ? '' : error;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,9 +168,8 @@ export function ListingForm({ listing, onSaved, onCancel }: ListingFormProps) {
     setHasSubmitted(true);
 
     const errs = validate(form);
-    setFieldErrors(errs);
     if (Object.keys(errs).length > 0) {
-      setError('Please fix the highlighted fields.');
+      setError(FIX_FIELDS_MESSAGE);
       document.getElementById(Object.keys(errs)[0])?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
@@ -707,9 +708,9 @@ export function ListingForm({ listing, onSaved, onCancel }: ListingFormProps) {
         )}
       </section>
 
-      {error && (
+      {visibleError && (
         <p className="field-error" role="alert">
-          {error}
+          {visibleError}
         </p>
       )}
 

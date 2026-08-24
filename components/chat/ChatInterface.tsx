@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useAsyncData } from '@/hooks/use-async-data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -56,43 +57,45 @@ interface ChatInterfaceProps {
   initialMessage?: string;
 }
 
+const EMPTY_MESSAGES: Message[] = [];
+
 export function ChatInterface({ currentUserId, partnerId, initialMessage }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [partner, setPartner] = useState<Partner | null>(null);
   const [newMessage, setNewMessage] = useState(initialMessage || '');
   const [subject, setSubject] = useState('');
   const [showSubject, setShowSubject] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  // Send failures only — load failures arrive as `loadError` from useAsyncData.
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const fetchMessages = async () => {
-    try {
-      setErrorMessage(null);
-      const response = await fetch(`/api/messages/${partnerId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data.messages);
-        setPartner(data.partner);
-      } else {
-        setErrorMessage('Unable to load this conversation. Please refresh and try again.');
+  // Loading, aborting and race-handling all come from useAsyncData; polling is just
+  // a repeated reload. Doing it this way means a slow response for the previous
+  // conversation can never land on this one, which the hand-rolled version allowed.
+  const {
+    data,
+    loading,
+    error: loadError,
+    reload: fetchMessages,
+  } = useAsyncData<{ messages: Message[]; partner: Partner | null }>(
+    async (signal) => {
+      const response = await fetch(`/api/messages/${partnerId}`, { signal });
+      if (!response.ok) {
+        throw new Error('Unable to load this conversation. Please refresh and try again.');
       }
-    } catch (error) {
-      console.error('Failed to fetch messages:', error);
-      setErrorMessage('Unable to load this conversation. Please check your connection.');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return response.json();
+    },
+    [partnerId],
+    'Unable to load this conversation. Please check your connection.'
+  );
+  const messages = data?.messages ?? EMPTY_MESSAGES;
+  const partner = data?.partner ?? null;
 
   useEffect(() => {
-    fetchMessages();
-    // Poll for new messages every 10 seconds
+    // Poll for new messages every 10 seconds.
     const interval = setInterval(fetchMessages, 10000);
     return () => clearInterval(interval);
-  }, [partnerId]);
+  }, [fetchMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -132,7 +135,7 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
         setNewMessage('');
         setSubject('');
         setShowSubject(false);
-        await fetchMessages();
+        fetchMessages();
       } else {
         const data = await response.json().catch(() => ({}));
         setErrorMessage(data.error || 'Unable to send message. Please try again.');
@@ -287,9 +290,9 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
 
         {/* Input Area */}
         <div className="border-t bg-white p-4 shadow-inner">
-          {errorMessage && (
+          {(loadError || errorMessage) && (
             <p className="mb-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
-              {errorMessage}
+              {loadError || errorMessage}
             </p>
           )}
           <form onSubmit={sendMessage} className="space-y-3">

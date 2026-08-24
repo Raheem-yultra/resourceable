@@ -53,7 +53,7 @@ type StatusFilter = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export function AdminBusinessVerification() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('PENDING');
   const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
@@ -73,29 +73,51 @@ export function AdminBusinessVerification() {
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
 
-  const fetchBusinesses = useCallback(async () => {
-    setLoading(true);
-    setSelected(new Set());
-    try {
-      const params = new URLSearchParams({ status: statusFilter });
-      if (appliedSearch) params.set('search', appliedSearch);
-      if (dateFrom) params.set('dateFrom', new Date(dateFrom).toISOString());
-      if (dateTo) params.set('dateTo', new Date(`${dateTo}T23:59:59`).toISOString());
-      const response = await fetch(`/api/admin/businesses/pending?${params.toString()}`);
-      if (response.ok) {
-        const data = await response.json();
-        setBusinesses(data.businesses);
-      }
-    } catch (error) {
-      console.error('Failed to fetch businesses:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter, appliedSearch, dateFrom, dateTo]);
+  // This queue keeps its own `businesses` state because approve/reject/bulk patch
+  // rows in place instead of refetching, so it does not use useAsyncData.
+  //
+  // `loading` is derived from which filter combination has actually settled. That
+  // removes the `setLoading(true)` the effect used to perform on every run, and
+  // still shows the spinner the moment a filter changes — the key changes, so the
+  // settled one no longer matches.
+  const filterKey = JSON.stringify([statusFilter, appliedSearch, dateFrom, dateTo, reloadNonce]);
+  const [settledKey, setSettledKey] = useState<string | null>(null);
+  const loading = settledKey !== filterKey;
 
   useEffect(() => {
-    fetchBusinesses();
-  }, [fetchBusinesses]);
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const params = new URLSearchParams({ status: statusFilter });
+        if (appliedSearch) params.set('search', appliedSearch);
+        if (dateFrom) params.set('dateFrom', new Date(dateFrom).toISOString());
+        if (dateTo) params.set('dateTo', new Date(`${dateTo}T23:59:59`).toISOString());
+        const response = await fetch(`/api/admin/businesses/pending?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (controller.signal.aborted) return;
+        setBusinesses(data.businesses);
+        // Selection is per result set; clear it as the new one arrives rather than
+        // the moment the filter changes, so the checkboxes do not flicker mid-load.
+        setSelected(new Set());
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error('Failed to fetch businesses:', error);
+      } finally {
+        // Aborting means a newer filter combination is already in flight; letting
+        // this one mark itself settled would hide that request's spinner.
+        if (!controller.signal.aborted) setSettledKey(filterKey);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [filterKey, statusFilter, appliedSearch, dateFrom, dateTo]);
+
+  // Refetch on demand (after an approve/reject that cannot be patched in place).
+  const fetchBusinesses = useCallback(() => setReloadNonce((n) => n + 1), []);
 
   const toggleCard = (businessId: string) => {
     setExpandedCards((prev) => {

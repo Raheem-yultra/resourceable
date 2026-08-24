@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
+import { useAsyncData } from '@/hooks/use-async-data';
 import { Button } from '@/components/ui/button';
 import { Flag, ExternalLink, Loader2 } from 'lucide-react';
 
@@ -38,28 +39,24 @@ const STATUS_STYLES: Record<string, string> = {
 const FILTERS = ['ALL', 'OPEN', 'REVIEWING', 'RESOLVED', 'DISMISSED'] as const;
 
 export function ReportsManager() {
-  const [reports, setReports] = useState<ReportRow[]>([]);
-  const [openCount, setOpenCount] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('OPEN');
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
+  const {
+    data,
+    loading,
+    reload: load,
+  } = useAsyncData<{ reports: ReportRow[]; openCount: number }>(
+    async (signal) => {
       const qs = filter === 'ALL' ? '' : `?status=${filter}`;
-      const res = await fetch(`/api/admin/reports${qs}`);
-      if (res.ok) {
-        const data = await res.json();
-        setReports(data.reports || []);
-        setOpenCount(data.openCount ?? 0);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [filter]);
-
-  useEffect(() => { load(); }, [load]);
+      const res = await fetch(`/api/admin/reports${qs}`, { signal });
+      if (!res.ok) throw new Error('Failed to load reports');
+      return res.json();
+    },
+    [filter]
+  );
+  const reports = data?.reports ?? [];
+  const openCount = data?.openCount ?? 0;
 
   const setStatus = async (id: string, status: ReportRow['status']) => {
     setBusyId(id);

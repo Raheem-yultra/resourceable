@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
+import { useAsyncData } from '@/hooks/use-async-data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,24 +30,21 @@ const EMPTY = {
 };
 
 export function ResourcesManager() {
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/admin/resources');
-      if (res.ok) setResources((await res.json()).resources || []);
-    } finally {
-      setLoading(false);
-    }
+  const {
+    data,
+    loading,
+    reload: load,
+  } = useAsyncData<{ resources: Resource[] }>(async (signal) => {
+    const res = await fetch('/api/admin/resources', { signal });
+    if (!res.ok) throw new Error('Failed to load resources');
+    return res.json();
   }, []);
-
-  useEffect(() => { load(); }, [load]);
+  const resources = data?.resources ?? [];
 
   const resetForm = () => { setForm({ ...EMPTY }); setEditingId(null); setError(''); };
 
@@ -81,7 +79,9 @@ export function ResourcesManager() {
         throw new Error(data.error || 'Failed to save');
       }
       resetForm();
-      await load();
+      // `load` schedules a refetch rather than awaiting one; the list shows its own
+      // loading state while it lands, so the save button stops spinning right away.
+      load();
     } catch (e: any) {
       setError(e.message || 'Something went wrong.');
     } finally {

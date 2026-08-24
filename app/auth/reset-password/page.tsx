@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -19,11 +19,10 @@ function ResetPasswordForm() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!token) {
-      setError('Invalid reset link. Please request a new password reset.');
-    }
-  }, [token]);
+  // There is deliberately nothing here for the missing-token case: `if (!token)`
+  // below returns a dedicated "Invalid Reset Link" card and never renders this
+  // form. The effect that used to sit here wrote that message into `error`, which
+  // only the form branch displays — so it was setting state nothing could show.
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

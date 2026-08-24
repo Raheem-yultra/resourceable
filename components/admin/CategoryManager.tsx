@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useAsyncData } from '@/hooks/use-async-data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,9 +40,8 @@ function usageCount(item: TaxonomyItem): number {
 }
 
 export function CategoryManager() {
-  const [serviceTypes, setServiceTypes] = useState<TaxonomyItem[]>([]);
-  const [disabilities, setDisabilities] = useState<TaxonomyItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Mutation errors only (create / rename / archive). Load failures come from
+  // useAsyncData below; the two are merged for display.
   const [error, setError] = useState<string | null>(null);
   const [activeKind, setActiveKind] = useState<Kind>('serviceType');
 
@@ -58,25 +58,22 @@ export function CategoryManager() {
   const [editListingType, setEditListingType] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/admin/taxonomy');
+  const {
+    data,
+    loading,
+    error: loadError,
+    reload: load,
+  } = useAsyncData<{ serviceTypes: TaxonomyItem[]; disabilities: TaxonomyItem[] }>(
+    async (signal) => {
+      const res = await fetch('/api/admin/taxonomy', { signal });
       if (!res.ok) throw new Error('Failed to load categories');
-      const data = await res.json();
-      setServiceTypes(data.serviceTypes || []);
-      setDisabilities(data.disabilities || []);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load categories');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
+      return res.json();
+    },
+    [],
+    'Failed to load categories'
+  );
+  const serviceTypes = data?.serviceTypes ?? [];
+  const disabilities = data?.disabilities ?? [];
 
   const items = activeKind === 'serviceType' ? serviceTypes : disabilities;
 
@@ -167,9 +164,9 @@ export function CategoryManager() {
           </Button>
         </div>
 
-        {error && (
+        {(loadError || error) && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive" role="alert">
-            {error}
+            {loadError || error}
           </div>
         )}
 
