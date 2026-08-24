@@ -156,7 +156,11 @@ survives in the application code.
 
 1. **(one-time)** Vercel → **Add New → Project** → import the GitHub repo.
    Framework preset **Next.js** — no build overrides needed (`postinstall`
-   already runs `prisma generate`).
+   already runs `prisma generate`). The Node version comes from `engines` in
+   `package.json`, pinned to a **major** (`24.x`) rather than a floor: an open
+   range like `>=20` makes Vercel move the build onto each new Node major as it
+   ships, so a runtime change would arrive with a deploy nobody connected to it.
+   Bump it deliberately, and check the build before you do.
 2. Add **all** environment variables from step 2 to the Production environment
    (and Preview, if you want working preview deploys — point previews at a
    separate database, never production).
