@@ -13,7 +13,8 @@ const bodySchema = z.object({
 // Set a provider's trust tier (plan §4). Because Service.verificationLevel is a
 // denormalized copy (for fast search filter/rank), we update the business AND all
 // its listings in one transaction so search never shows a stale tier badge.
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getAdminSession();
     if (!session) {

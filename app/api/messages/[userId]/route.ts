@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
 interface RouteContext {
-  params: { userId: string };
+  params: Promise<{ userId: string }>;
 }
 
 const routeParamsSchema = z.object({
@@ -18,10 +18,8 @@ const conversationQuerySchema = z.object({
 });
 
 // GET /api/messages/[userId] - Get conversation with specific user
-export async function GET(
-  req: NextRequest,
-  { params }: RouteContext
-) {
+export async function GET(req: NextRequest, props: RouteContext) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -155,10 +153,8 @@ export async function GET(
 }
 
 // PATCH /api/messages/[userId] - Mark messages as read
-export async function PATCH(
-  _req: NextRequest,
-  { params }: RouteContext
-) {
+export async function PATCH(_req: NextRequest, props: RouteContext) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -189,10 +185,8 @@ export async function PATCH(
 }
 
 // DELETE /api/messages/[userId] - Archive conversation
-export async function DELETE(
-  _req: NextRequest,
-  { params }: RouteContext
-) {
+export async function DELETE(_req: NextRequest, props: RouteContext) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {

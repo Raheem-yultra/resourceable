@@ -30,7 +30,8 @@ function VerificationBadge({ level }: { level: string }) {
   return <span className="inline-flex items-center gap-1 rounded-full bg-muted text-muted-foreground border border-border px-2 py-0.5 text-xs font-medium"><ShieldQuestion className="h-3.5 w-3.5" /> Unverified</span>;
 }
 
-export default async function ListingDetailPage({ params }: { params: { id: string } }) {
+export default async function ListingDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
 
   const service = await prisma.service.findUnique({

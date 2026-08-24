@@ -23,14 +23,6 @@ function VerifyEmailContent() {
   // a second call (e.g. React 18 dev double-effect) would report "expired".
   const verifyFiredRef = useRef(false);
 
-  useEffect(() => {
-    if (token && !verifyFiredRef.current) {
-      verifyFiredRef.current = true;
-      verifyEmail(token);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
-
   const verifyEmail = async (verificationToken: string) => {
     setStatus('loading');
     try {
@@ -53,6 +45,15 @@ function VerifyEmailContent() {
       setMessage('An error occurred during verification');
     }
   };
+
+  useEffect(() => {
+    if (token && !verifyFiredRef.current) {
+      verifyFiredRef.current = true;
+      verifyEmail(token);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
 
   const handleResend = async (e: React.FormEvent) => {
     e.preventDefault();

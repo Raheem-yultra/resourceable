@@ -4,13 +4,14 @@ import { ChatInterface } from '@/components/chat/ChatInterface';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
-export default async function ChatPage({ 
-  params,
-  searchParams 
-}: { 
-  params: { userId: string };
-  searchParams: { message?: string };
-}) {
+export default async function ChatPage(
+  props: { 
+    params: Promise<{ userId: string }>;
+    searchParams: Promise<{ message?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {

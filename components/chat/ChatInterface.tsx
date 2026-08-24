@@ -68,28 +68,6 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    fetchMessages();
-    // Poll for new messages every 10 seconds
-    const interval = setInterval(fetchMessages, 10000);
-    return () => clearInterval(interval);
-  }, [partnerId]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Auto-focus textarea when component mounts or when messages are empty
-  useEffect(() => {
-    if (!loading && textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  }, [loading, messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   const fetchMessages = async () => {
     try {
       setErrorMessage(null);
@@ -108,6 +86,30 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchMessages();
+    // Poll for new messages every 10 seconds
+    const interval = setInterval(fetchMessages, 10000);
+    return () => clearInterval(interval);
+  }, [partnerId]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Auto-focus textarea when component mounts or when messages are empty
+  useEffect(() => {
+    if (!loading && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [loading, messages]);
+
+
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

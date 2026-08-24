@@ -38,10 +38,6 @@ export function MessageInbox({ currentUserId }: MessageInboxProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
-    fetchConversations();
-  }, [filter]);
-
   const fetchConversations = async () => {
     setLoading(true);
     try {
@@ -57,6 +53,11 @@ export function MessageInbox({ currentUserId }: MessageInboxProps) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchConversations();
+  }, [filter]);
+
 
   const filteredConversations = conversations.filter((conv) => {
     if (!searchQuery) return true;

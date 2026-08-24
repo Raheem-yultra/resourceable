@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default function Error({
@@ -33,12 +34,8 @@ export default function Error({
             >
               Try again
             </Button>
-            <Button
-              onClick={() => window.location.href = '/'}
-              variant="outline"
-              className="w-full min-h-[48px]"
-            >
-              Go to homepage
+            <Button asChild variant="outline" className="w-full min-h-[48px]">
+              <Link href="/">Go to homepage</Link>
             </Button>
           </div>
           {process.env.NODE_ENV === 'development' && error.message && (

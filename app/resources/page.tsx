@@ -15,11 +15,12 @@ const TYPE_META: Record<string, { label: string; icon: React.ComponentType<{ cla
   FORM: { label: 'Form', icon: ScrollText },
 };
 
-export default async function ResourcesPage({
-  searchParams,
-}: {
-  searchParams: { topic?: string };
-}) {
+export default async function ResourcesPage(
+  props: {
+    searchParams: Promise<{ topic?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const topic = searchParams.topic;
   const resources = await prisma.resource.findMany({
     where: {

@@ -1,6 +1,12 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 
+// Named proxy.ts, not middleware.ts: Next 16 deprecated the middleware file
+// convention in favour of proxy. Same contract — a default-exported handler plus
+// a `config.matcher` — so next-auth's withAuth wrapper is used exactly as before.
+// This file is the route gate for /admin and the provider pages; the server-side
+// checks in lib/admin.ts and each API route remain the real authority.
+
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;

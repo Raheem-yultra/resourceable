@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BusinessContactCard } from '@/components/business/BusinessContactCard';
 
 interface BusinessPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 async function getBusinessById(id: string) {
@@ -67,7 +67,8 @@ async function getBusinessById(id: string) {
   });
 }
 
-export default async function BusinessPage({ params }: BusinessPageProps) {
+export default async function BusinessPage(props: BusinessPageProps) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   const business = await getBusinessById(params.id);
 

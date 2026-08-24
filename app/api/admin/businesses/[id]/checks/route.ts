@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 // Deliberately POST, not GET: it hits third-party endpoints and writes results. It
 // never changes verificationStatus or verificationLevel — approval stays manual, and
 // this only refreshes the evidence the admin sees.
-export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getAdminSession();
     if (!session) {
