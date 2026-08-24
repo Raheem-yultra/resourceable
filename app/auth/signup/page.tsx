@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ const PROVIDER_STEPS = [
   'Create a listing for each service, product, program, or event you offer',
 ];
 
-export default function SignUpPage() {
+function SignUpPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roleParam = searchParams.get('role');
@@ -383,5 +383,23 @@ export default function SignUpPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// useSearchParams() needs a Suspense boundary of its own. It previously inherited
+// one from the root loading.tsx, but that boundary made every route stream — which
+// is what turned missing listings into soft 404s. Same pattern as the other auth
+// pages.
+export default function SignUpPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      }
+    >
+      <SignUpPageContent />
+    </Suspense>
   );
 }

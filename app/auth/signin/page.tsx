@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Mail, Lock, LogIn, RefreshCw } from 'lucide-react';
 import { BackToSiteLink } from '@/components/auth/BackToSiteLink';
 
-export default function SignInPage() {
+function SignInPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const message = searchParams.get('message');
@@ -211,5 +211,23 @@ export default function SignInPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// useSearchParams() needs a Suspense boundary of its own. It previously inherited
+// one from the root loading.tsx, but that boundary made every route stream — which
+// is what turned missing listings into soft 404s. Same pattern as the other auth
+// pages.
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      }
+    >
+      <SignInPageContent />
+    </Suspense>
   );
 }

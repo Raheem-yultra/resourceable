@@ -42,6 +42,26 @@ export function getAppBaseUrl(): string {
 }
 
 /**
+ * Canonical origin for build-time metadata — sitemap, robots, Open Graph URLs.
+ *
+ * Deliberately NEVER throws, unlike getAppBaseUrl(). Those callers run during
+ * `next build`, where a missing NEXTAUTH_URL would take the whole build down; a
+ * wrong canonical URL in a sitemap is a bad day, a failed deploy is a worse one.
+ * Falls back to the origin Vercel injects, which is correct for both preview and
+ * production deploys, before finally giving up and using localhost.
+ */
+export function getPublicBaseUrl(): string {
+  const explicit = process.env.NEXTAUTH_URL?.trim();
+  if (explicit) return explicit.replace(/\/+$/, '');
+
+  const vercelHost =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() || process.env.VERCEL_URL?.trim();
+  if (vercelHost) return `https://${vercelHost.replace(/\/+$/, '')}`;
+
+  return DEV_BASE_URL;
+}
+
+/**
  * The transactional sender ("From" header).
  *
  * In production an unset value throws rather than silently using the sandbox

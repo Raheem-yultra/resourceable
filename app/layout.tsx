@@ -1,11 +1,43 @@
 import type { Metadata } from 'next';
+import { getPublicBaseUrl } from '@/lib/env';
 import './globals.css';
 import { ConditionalNavbar } from '@/components/layout/ConditionalNavbar';
 import { Providers } from '@/components/layout/Providers';
 
+const SITE_NAME = 'ResourceAble';
+const SITE_TITLE = 'ResourceAble - Disability Services Directory';
+const SITE_DESCRIPTION =
+  'Find trusted disability services and support from verified providers in your community — autism, Down syndrome, ADHD, and more.';
+
 export const metadata: Metadata = {
-  title: 'ResourceAble - Disability Services Directory',
-  description: 'Find trusted disability services and support from verified providers in your community — autism, Down syndrome, ADHD, and more.',
+  // Absolute URLs for Open Graph and the sitemap are resolved against this. It
+  // comes from getPublicBaseUrl (never throws) rather than getAppBaseUrl, because
+  // this is evaluated during `next build` and a missing NEXTAUTH_URL must not take
+  // the whole build down.
+  metadataBase: new URL(getPublicBaseUrl()),
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  // Families overwhelmingly share providers through messaging apps, where a link
+  // with no card is a bare URL nobody clicks. opengraph-image.tsx supplies the
+  // picture; these supply everything around it.
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: '/',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
