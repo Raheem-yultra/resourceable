@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { BackToSiteLink } from '@/components/auth/BackToSiteLink';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -80,6 +81,7 @@ export default function ForgotPasswordPage() {
                 Try a different email
               </Button>
             </div>
+            <BackToSiteLink />
           </CardContent>
         </Card>
       </div>
@@ -150,6 +152,7 @@ export default function ForgotPasswordPage() {
               </p>
             </div>
           </form>
+          <BackToSiteLink />
         </CardContent>
       </Card>
     </div>

@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { BackToSiteLink } from '@/components/auth/BackToSiteLink';
 
 export default function SignOutPage() {
 	const router = useRouter();
@@ -27,6 +28,7 @@ export default function SignOutPage() {
 					<Button onClick={() => router.back()} variant="outline" className="flex-1 min-h-[48px]">
 						Cancel
 					</Button>
+					<BackToSiteLink />
 				</CardContent>
 			</Card>
 		</div>

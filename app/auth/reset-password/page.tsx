@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { BackToSiteLink } from '@/components/auth/BackToSiteLink';
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -84,6 +85,7 @@ function ResetPasswordForm() {
             <Button asChild variant="outline" className="w-full">
               <Link href="/auth/signin">Back to Sign In</Link>
             </Button>
+            <BackToSiteLink />
           </CardContent>
         </Card>
       </div>
@@ -112,6 +114,7 @@ function ResetPasswordForm() {
             <Button asChild className="w-full">
               <Link href="/auth/signin">Sign In Now</Link>
             </Button>
+            <BackToSiteLink />
           </CardContent>
         </Card>
       </div>
@@ -207,6 +210,7 @@ function ResetPasswordForm() {
               </Link>
             </div>
           </form>
+          <BackToSiteLink />
         </CardContent>
       </Card>
     </div>

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail, Lock, User, MapPin, Building2, Phone } from 'lucide-react';
+import { BackToSiteLink } from '@/components/auth/BackToSiteLink';
 
 // What a provider account actually involves, stated before they commit to typing.
 // Signup only opens the account; the details and listings come after email
@@ -378,17 +379,7 @@ export default function SignUpPage() {
             </Button>
           </form>
 
-          {/* The site header is hidden on this screen, so this is the only way back
-              out of it. Without it the page is a dead end for anyone who arrived
-              here by mistake or changed their mind. */}
-          <div className="mt-6 text-center">
-            <Link
-              href="/"
-              className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-            >
-              Back to ResourceAble
-            </Link>
-          </div>
+          <BackToSiteLink />
         </CardContent>
       </Card>
     </div>

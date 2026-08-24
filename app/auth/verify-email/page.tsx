@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { CheckCircle, XCircle, Loader2, Mail, RefreshCw } from 'lucide-react';
+import { BackToSiteLink } from '@/components/auth/BackToSiteLink';
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -167,6 +168,7 @@ function VerifyEmailContent() {
             <Button asChild variant="outline" className="w-full min-h-[44px]">
               <Link href="/auth/signin">Go to Sign In</Link>
             </Button>
+            <BackToSiteLink />
           </CardContent>
         </Card>
       </div>
@@ -244,6 +246,7 @@ function VerifyEmailContent() {
           <Button asChild className="w-full min-h-[44px]">
             <Link href="/auth/signin">Sign In</Link>
           </Button>
+          <BackToSiteLink />
         </CardContent>
       </Card>
     </div>

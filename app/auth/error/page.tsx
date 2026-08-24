@@ -73,9 +73,14 @@ function AuthErrorContent() {
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               Need help?{' '}
-              <Link href="/contact" className="text-primary hover:text-primary/80">
+              {/* There is no /contact page — that link 404'd. The support address
+                  is the only contact route that actually exists. */}
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                className="text-primary hover:text-primary/80"
+              >
                 Contact support
-              </Link>
+              </a>
             </p>
           </div>
         </CardContent>
@@ -83,6 +88,10 @@ function AuthErrorContent() {
     </div>
   );
 }
+
+// Mirrors SUPPORT_EMAIL's default in lib/env.ts; this page is a client
+// component and cannot read server config.
+const SUPPORT_EMAIL = 'support@resourceable.com';
 
 export default function AuthErrorPage() {
   return (

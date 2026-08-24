@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail, Lock, LogIn, RefreshCw } from 'lucide-react';
+import { BackToSiteLink } from '@/components/auth/BackToSiteLink';
 
 export default function SignInPage() {
   const router = useRouter();
@@ -206,6 +207,7 @@ export default function SignInPage() {
               </Button>
             </div>
           </form>
+          <BackToSiteLink />
         </CardContent>
       </Card>
     </div>
