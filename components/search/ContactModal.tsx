@@ -55,6 +55,18 @@ export function ContactModal({
     phone: '',
     message: '',
   });
+  // A signed-in family should not have to retype their own name and email into a
+  // form the site could have filled in. Applied when the dialog opens rather than
+  // held in the initial state, because the session may still be loading at mount
+  // — and only over blank fields, so a draft in progress is never overwritten.
+  const prefillFromSession = () => {
+    if (!session?.user) return;
+    setFormData((prev) => ({
+      ...prev,
+      name: prev.name || session.user.name || '',
+      email: prev.email || session.user.email || '',
+    }));
+  };
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -129,11 +141,13 @@ export function ContactModal({
   // Clear errors when dialog closes
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
-    if (!newOpen) {
-      setError('');
-      setValidationErrors({});
-      setSuccess(false);
+    if (newOpen) {
+      prefillFromSession();
+      return;
     }
+    setError('');
+    setValidationErrors({});
+    setSuccess(false);
   };
 
   return (
@@ -214,6 +228,17 @@ export function ContactModal({
               `We'll notify ${businessName} and send you their contact information via email.`
             }
           </p>
+          {!session && (
+            <p className="text-xs text-muted-foreground">
+              <Link
+                href={`/auth/signin?callbackUrl=${encodeURIComponent(`/listings/${serviceId}`)}`}
+                className="text-primary underline underline-offset-4 hover:no-underline"
+              >
+                Sign in
+              </Link>{' '}
+              to message this provider directly and keep the conversation in one place.
+            </p>
+          )}
 
           {success ? (
             <div className="theme-success p-6 space-y-3">

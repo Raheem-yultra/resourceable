@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { after } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -6,9 +8,50 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BusinessContactCard } from '@/components/business/BusinessContactCard';
+import { BackLink } from '@/components/ui/back-link';
+import { Breadcrumbs, type Crumb } from '@/components/ui/breadcrumbs';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { breadcrumbSchema, businessSchema } from '@/lib/structured-data';
+import { pageMetadata, truncateDescription } from '@/lib/seo';
 
 interface BusinessPageProps {
   params: Promise<{ id: string }>;
+}
+
+// Provider pages are shared between families as often as individual listings are,
+// and inherited the same generic site-wide title until now.
+export async function generateMetadata(props: BusinessPageProps): Promise<Metadata> {
+  const { id } = await props.params;
+  const business = await prisma.business.findUnique({
+    where: { id },
+    select: {
+      businessName: true,
+      description: true,
+      city: true,
+      state: true,
+      isActive: true,
+      verificationStatus: true,
+      _count: { select: { services: true } },
+    },
+  });
+
+  if (!business) return { title: 'Provider not found - ResourceAble' };
+
+  const place = [business.city, business.state].filter(Boolean).join(', ');
+  const publiclyVisible = business.isActive && business.verificationStatus === 'APPROVED';
+
+  return pageMetadata({
+    title: `${business.businessName}${place ? ` — ${place}` : ''}`,
+    description: truncateDescription(
+      business.description ||
+        `${business.businessName}${place ? ` in ${place}` : ''} lists ${business._count.services} service${
+          business._count.services === 1 ? '' : 's'
+        } on ResourceAble.`
+    ),
+    path: `/business/${id}`,
+    type: 'profile',
+    noindex: !publiclyVisible,
+  });
 }
 
 async function getBusinessById(id: string) {
@@ -87,18 +130,73 @@ export default async function BusinessPage(props: BusinessPageProps) {
 
   const canContact = session?.user && session.user.id !== business.userId;
 
+  const trail: Crumb[] = [
+    { name: 'Home', path: '/' },
+    { name: 'Browse', path: '/browse' },
+    { name: business.businessName, path: `/business/${business.id}` },
+  ];
+
+  // Record the visit. The provider dashboard has always displayed "Profile Views"
+  // and it has always read zero, because no code path anywhere incremented the
+  // column — a metric that never moves reads as "nobody is finding me" and is the
+  // sort of thing that makes a provider give up on the listing.
+  //
+  // Owners and admins are excluded so a provider refreshing their own page cannot
+  // inflate it. `after()` runs the write once the response has been sent, so
+  // counting a view never costs the visitor latency and a failed counter can never
+  // fail the page — and it keeps the write out of the render pass, which Next is
+  // free to re-run.
+  if (publiclyVisible && !isOwner && session?.user?.role !== 'ADMIN') {
+    after(async () => {
+      try {
+        await prisma.business.update({
+          where: { id: business.id },
+          data: { viewCount: { increment: 1 } },
+        });
+      } catch (error) {
+        console.error('Failed to record profile view:', error);
+      }
+    });
+  }
+
   // Group disabilities by primary/secondary
   const primaryDisabilities = business.businessDisabilities.filter((bd: any) => bd.isPrimary);
   const secondaryDisabilities = business.businessDisabilities.filter((bd: any) => !bd.isPrimary);
 
   return (
     <div className="min-h-screen">
+      {/* A suspended or pending provider is not something to advertise. */}
+      {publiclyVisible && (
+        <JsonLd
+          data={[
+            businessSchema({
+              id: business.id,
+              businessName: business.businessName,
+              description: business.description,
+              address: business.address,
+              addressLine2: business.addressLine2,
+              city: business.city,
+              state: business.state,
+              zipCode: business.zipCode,
+              phone: business.phone,
+              email: business.email,
+              website: business.website,
+              logo: business.logo,
+              latitude: business.latitude,
+              longitude: business.longitude,
+              averageRating: business.averageRating,
+              totalReviews: business.totalReviews,
+            }),
+            breadcrumbSchema(trail),
+          ]}
+        />
+      )}
+
       {/* Header */}
       <div className="border-b">
-        <div className="page-wrap py-3 sm:py-4">
-          <Link href="/search" className="text-primary hover:underline text-sm sm:text-base inline-flex items-center min-h-[44px]">
-            ← Back to Search
-          </Link>
+        <div className="page-wrap flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3 sm:py-4">
+          <Breadcrumbs trail={trail} />
+          <BackLink fallbackHref="/browse" label="Back to results" className="min-h-[44px]" />
         </div>
       </div>
 

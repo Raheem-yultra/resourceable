@@ -1,188 +1,96 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { MapPin, Check, Plus, Minus, SlidersHorizontal, Users } from 'lucide-react';
+import { MapPin, Check, Plus, Minus, Users, ShieldCheck } from 'lucide-react';
 import { AGE_GROUP_FILTERS } from '@/lib/listing-taxonomy';
+import { DEFAULT_RADIUS, type SearchState } from '@/lib/search-url';
 
-interface Disability {
+export interface FilterOption {
   id: string;
   name: string;
   slug?: string;
-}
-
-interface ServiceType {
-  id: string;
-  name: string;
-  slug?: string;
-}
-
-export interface AppliedFilters {
-  zipCode: string;
-  radius: number;
-  disabilities: Disability[];
-  serviceTypes: ServiceType[];
-  /** AgeGroup enum values. Empty = any age. */
-  ageGroups: string[];
 }
 
 interface SearchFiltersProps {
-  onSearch: (filters: AppliedFilters) => void;
-  /** Currently applied filters, so reopening the panel shows what's in effect. */
-  initial?: Partial<AppliedFilters>;
-  /** Sort is applied live (not on "Show results"), so it's owned by the parent. */
-  sortBy?: string;
-  onSortChange?: (value: string) => void;
+  /** Applied filters, so reopening the panel shows what's actually in effect. */
+  initial: SearchState;
+  /** Loaded once by the parent — the pills outside this panel need the names too. */
+  disabilities: FilterOption[];
+  serviceTypes: FilterOption[];
+  loadingOptions: boolean;
   /** Suppress the age section on categories that already pin an age (21+). */
   hideAgeFilter?: boolean;
+  onApply: (next: SearchState) => void;
 }
-
-// No price sort: providers leave price blank often enough that the ordering was
-// mostly an artefact of missing data rather than a real ranking. The API still
-// accepts sortBy=price; it is simply not offered here.
-const SORT_OPTIONS = [
-  { value: 'relevance', label: 'Recommended' },
-  { value: 'rating', label: 'Highest rated' },
-  { value: 'newest', label: 'Newest' },
-];
 
 /** How many chips to show before the "+N more" toggle. */
 const CHIP_PREVIEW = 8;
 
 export function SearchFilters({
-  onSearch,
   initial,
-  sortBy,
-  onSortChange,
+  disabilities,
+  serviceTypes,
+  loadingOptions,
   hideAgeFilter = false,
+  onApply,
 }: SearchFiltersProps) {
-  const [disabilities, setDisabilities] = useState<Disability[]>([]);
-  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
-  const [loadingOptions, setLoadingOptions] = useState(true);
-
   // Seed from the applied filters: the panel lives in a sheet that unmounts on
   // close, so without this every reopen would silently reset the user's choices.
-  const [zipCode, setZipCode] = useState(initial?.zipCode ?? '');
-  const [radius, setRadius] = useState(initial?.radius ?? 25);
-  const [selectedDisabilities, setSelectedDisabilities] = useState<Disability[]>(
-    initial?.disabilities ?? []
-  );
-  const [selectedServiceTypes, setSelectedServiceTypes] = useState<ServiceType[]>(
-    initial?.serviceTypes ?? []
-  );
-  const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>(initial?.ageGroups ?? []);
+  const [draft, setDraft] = useState<SearchState>(initial);
   const [showAllDisabilities, setShowAllDisabilities] = useState(false);
   const [showAllServices, setShowAllServices] = useState(false);
 
-  useEffect(() => {
-    const fetchFilters = async () => {
-      try {
-        const [disabilitiesRes, serviceTypesRes] = await Promise.all([
-          fetch('/api/disabilities'),
-          fetch('/api/service-types'),
-        ]);
-        if (disabilitiesRes.ok) {
-          const data = await disabilitiesRes.json();
-          setDisabilities(data.disabilities || []);
-        }
-        if (serviceTypesRes.ok) {
-          const data = await serviceTypesRes.json();
-          setServiceTypes(data.serviceTypes || []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch filter options:', error);
-      } finally {
-        setLoadingOptions(false);
-      }
-    };
+  const patch = (changes: Partial<SearchState>) => setDraft((d) => ({ ...d, ...changes }));
 
-    fetchFilters();
-  }, []);
-
-  const toggleDisability = (disability: Disability) =>
-    setSelectedDisabilities((prev) =>
-      prev.some((d) => d.id === disability.id)
-        ? prev.filter((d) => d.id !== disability.id)
-        : [...prev, disability]
-    );
-
-  const toggleServiceType = (serviceType: ServiceType) =>
-    setSelectedServiceTypes((prev) =>
-      prev.some((s) => s.id === serviceType.id)
-        ? prev.filter((s) => s.id !== serviceType.id)
-        : [...prev, serviceType]
-    );
-
-  const toggleAgeGroup = (value: string) =>
-    setSelectedAgeGroups((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
-    );
+  const toggleIn = (key: 'disabilityIds' | 'serviceTypeIds' | 'ageGroups', value: string) =>
+    setDraft((d) => ({
+      ...d,
+      [key]: d[key].includes(value) ? d[key].filter((v) => v !== value) : [...d[key], value],
+    }));
 
   const activeCount = useMemo(
     () =>
-      selectedDisabilities.length +
-      selectedServiceTypes.length +
-      selectedAgeGroups.length +
-      (zipCode ? 1 : 0),
-    [selectedDisabilities, selectedServiceTypes, selectedAgeGroups, zipCode]
+      draft.disabilityIds.length +
+      draft.serviceTypeIds.length +
+      draft.ageGroups.length +
+      (draft.zipCode ? 1 : 0) +
+      (draft.verifiedOnly ? 1 : 0) +
+      (draft.insuranceAccepted ? 1 : 0),
+    [draft]
   );
 
-  const handleApplyFilters = () => {
-    onSearch({
-      zipCode,
-      radius,
-      disabilities: selectedDisabilities,
-      serviceTypes: selectedServiceTypes,
-      ageGroups: selectedAgeGroups,
-    });
-  };
-
   const handleClearAll = () => {
-    setZipCode('');
-    setRadius(25);
-    setSelectedDisabilities([]);
-    setSelectedServiceTypes([]);
-    setSelectedAgeGroups([]);
-    onSearch({ zipCode: '', radius: 25, disabilities: [], serviceTypes: [], ageGroups: [] });
+    const cleared: SearchState = {
+      ...draft,
+      zipCode: '',
+      radius: DEFAULT_RADIUS,
+      disabilityIds: [],
+      serviceTypeIds: [],
+      ageGroups: [],
+      verifiedOnly: false,
+      insuranceAccepted: false,
+      // Sorting by distance with no ZIP has nothing to measure from.
+      sortBy: draft.sortBy === 'distance' ? 'relevance' : draft.sortBy,
+    };
+    setDraft(cleared);
+    onApply(cleared);
   };
 
-  const visibleDisabilities = showAllDisabilities
-    ? disabilities
-    : disabilities.slice(0, CHIP_PREVIEW);
-  const visibleServiceTypes = showAllServices
-    ? serviceTypes
-    : serviceTypes.slice(0, CHIP_PREVIEW);
+  const visibleDisabilities = showAllDisabilities ? disabilities : disabilities.slice(0, CHIP_PREVIEW);
+  const visibleServiceTypes = showAllServices ? serviceTypes : serviceTypes.slice(0, CHIP_PREVIEW);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5">
-        {/* Sort — applies immediately, so it sits first and reads as a view switch
-            rather than something you have to "apply". */}
-        {sortBy !== undefined && onSortChange && (
-          <FilterSection title="Sort by" icon={<SlidersHorizontal className="h-4 w-4" />} first>
-            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Sort listings by">
-              {SORT_OPTIONS.map((option) => (
-                <Chip
-                  key={option.value}
-                  role="radio"
-                  selected={sortBy === option.value}
-                  onClick={() => onSortChange(option.value)}
-                >
-                  {option.label}
-                </Chip>
-              ))}
-            </div>
-          </FilterSection>
-        )}
-
         <FilterSection
           title="Location"
           icon={<MapPin className="h-4 w-4" />}
-          count={zipCode ? 1 : 0}
-          onClear={zipCode ? () => setZipCode('') : undefined}
-          first={sortBy === undefined}
+          count={draft.zipCode ? 1 : 0}
+          onClear={draft.zipCode ? () => patch({ zipCode: '' }) : undefined}
+          first
         >
           <label htmlFor="zip-code-input" className="sr-only">
             ZIP code
@@ -199,8 +107,8 @@ export function SearchFilters({
               pattern="[0-9]{5}"
               maxLength={5}
               placeholder="ZIP code"
-              value={zipCode}
-              onChange={(e) => setZipCode(e.target.value.replace(/\D/g, ''))}
+              value={draft.zipCode}
+              onChange={(e) => patch({ zipCode: e.target.value.replace(/\D/g, '') })}
               className="h-11 pl-9"
               aria-describedby="zip-code-hint"
             />
@@ -208,12 +116,12 @@ export function SearchFilters({
 
           {/* The radius only means something once there's a ZIP to measure from,
               so it stays disabled (and explains itself) until one is entered. */}
-          <div className={cn('mt-4 transition-opacity', !zipCode && 'opacity-50')}>
+          <div className={cn('mt-4 transition-opacity', !draft.zipCode && 'opacity-50')}>
             <div className="mb-2 flex items-baseline justify-between">
               <label htmlFor="radius-slider" className="text-sm text-muted-foreground">
                 Within
               </label>
-              <span className="text-sm font-semibold tabular-nums">{radius} miles</span>
+              <span className="text-sm font-semibold tabular-nums">{draft.radius} miles</span>
             </div>
             <input
               id="radius-slider"
@@ -221,14 +129,16 @@ export function SearchFilters({
               min="5"
               max="100"
               step="5"
-              value={radius}
-              disabled={!zipCode}
-              onChange={(e) => setRadius(Number(e.target.value))}
+              value={draft.radius}
+              disabled={!draft.zipCode}
+              onChange={(e) => patch({ radius: Number(e.target.value) })}
               className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-secondary accent-primary disabled:cursor-not-allowed"
-              aria-label={`Search radius: ${radius} miles`}
+              aria-label={`Search radius: ${draft.radius} miles`}
             />
             <p id="zip-code-hint" className="mt-2 text-xs text-muted-foreground">
-              {zipCode ? 'Drag to widen or narrow the search area.' : 'Enter a ZIP code to search by distance.'}
+              {draft.zipCode
+                ? 'Drag to widen or narrow the search area.'
+                : 'Enter a ZIP code to search by distance.'}
             </p>
           </div>
         </FilterSection>
@@ -236,33 +146,62 @@ export function SearchFilters({
         {/* Age sits directly under Location because those are the two questions a
             family answers first: who is it for, and is it near me. */}
         {!hideAgeFilter && (
+          <FilterSection
+            title="Age"
+            icon={<Users className="h-4 w-4" />}
+            count={draft.ageGroups.length}
+            onClear={draft.ageGroups.length ? () => patch({ ageGroups: [] }) : undefined}
+          >
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by age">
+              {AGE_GROUP_FILTERS.map((age) => (
+                <Chip
+                  key={age.value}
+                  selected={draft.ageGroups.includes(age.value)}
+                  onClick={() => toggleIn('ageGroups', age.value)}
+                >
+                  {age.label}
+                </Chip>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Listings marked “all ages” are always included.
+            </p>
+          </FilterSection>
+        )}
+
+        {/* Trust and cost — the API has always supported both; neither was reachable
+            from the UI, which for this audience are two of the three questions that
+            decide whether a provider is worth calling at all. */}
         <FilterSection
-          title="Age"
-          icon={<Users className="h-4 w-4" />}
-          count={selectedAgeGroups.length}
-          onClear={selectedAgeGroups.length ? () => setSelectedAgeGroups([]) : undefined}
+          title="Trust & cost"
+          icon={<ShieldCheck className="h-4 w-4" />}
+          count={(draft.verifiedOnly ? 1 : 0) + (draft.insuranceAccepted ? 1 : 0)}
+          onClear={
+            draft.verifiedOnly || draft.insuranceAccepted
+              ? () => patch({ verifiedOnly: false, insuranceAccepted: false })
+              : undefined
+          }
         >
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by age">
-            {AGE_GROUP_FILTERS.map((age) => (
-              <Chip
-                key={age.value}
-                selected={selectedAgeGroups.includes(age.value)}
-                onClick={() => toggleAgeGroup(age.value)}
-              >
-                {age.label}
-              </Chip>
-            ))}
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by trust and cost">
+            <Chip selected={draft.verifiedOnly} onClick={() => patch({ verifiedOnly: !draft.verifiedOnly })}>
+              Verified providers only
+            </Chip>
+            <Chip
+              selected={draft.insuranceAccepted}
+              onClick={() => patch({ insuranceAccepted: !draft.insuranceAccepted })}
+            >
+              Accepts insurance
+            </Chip>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Listings marked “all ages” are always included.
+            Verified means we have checked the provider&apos;s credentials against public registries.
           </p>
         </FilterSection>
-        )}
 
         <FilterSection
           title="Disability"
-          count={selectedDisabilities.length}
-          onClear={selectedDisabilities.length ? () => setSelectedDisabilities([]) : undefined}
+          count={draft.disabilityIds.length}
+          onClear={draft.disabilityIds.length ? () => patch({ disabilityIds: [] }) : undefined}
         >
           <ChipGroup
             label="Filter by disability"
@@ -272,8 +211,8 @@ export function SearchFilters({
             {visibleDisabilities.map((disability) => (
               <Chip
                 key={disability.id}
-                selected={selectedDisabilities.some((d) => d.id === disability.id)}
-                onClick={() => toggleDisability(disability)}
+                selected={draft.disabilityIds.includes(disability.id)}
+                onClick={() => toggleIn('disabilityIds', disability.id)}
               >
                 {disability.name}
               </Chip>
@@ -290,8 +229,8 @@ export function SearchFilters({
 
         <FilterSection
           title="Service type"
-          count={selectedServiceTypes.length}
-          onClear={selectedServiceTypes.length ? () => setSelectedServiceTypes([]) : undefined}
+          count={draft.serviceTypeIds.length}
+          onClear={draft.serviceTypeIds.length ? () => patch({ serviceTypeIds: [] }) : undefined}
         >
           <ChipGroup
             label="Filter by service type"
@@ -301,8 +240,8 @@ export function SearchFilters({
             {visibleServiceTypes.map((serviceType) => (
               <Chip
                 key={serviceType.id}
-                selected={selectedServiceTypes.some((s) => s.id === serviceType.id)}
-                onClick={() => toggleServiceType(serviceType)}
+                selected={draft.serviceTypeIds.includes(serviceType.id)}
+                onClick={() => toggleIn('serviceTypeIds', serviceType.id)}
               >
                 {serviceType.name}
               </Chip>
@@ -316,7 +255,6 @@ export function SearchFilters({
             )}
           </ChipGroup>
         </FilterSection>
-
       </div>
 
       {/* Always-reachable actions: the list above scrolls, this bar doesn't. */}
@@ -329,7 +267,7 @@ export function SearchFilters({
         >
           Clear all
         </Button>
-        <Button onClick={handleApplyFilters} className="flex-1 font-semibold">
+        <Button onClick={() => onApply(draft)} className="flex-1 font-semibold">
           Show results
           {activeCount > 0 && (
             <span className="ml-1.5 rounded-full bg-primary-foreground/20 px-2 py-0.5 text-xs font-bold tabular-nums">

@@ -15,6 +15,9 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Business Dashboard - ResourceAble',
   description: 'Manage your services and connect with customers on ResourceAble',
+  // Private. robots.txt already disallows this path; the page-level directive
+  // is what still holds if a URL reaches a crawler another way.
+  robots: { index: false, follow: false },
 };
 
 // Presentation for each verification state (label, helper text, color)
@@ -29,7 +32,7 @@ export default async function BusinessDashboard() {
 
   // Redirect if not signed in or not a business user
   if (!session?.user || session.user.role !== 'BUSINESS') {
-    redirect('/auth/signin');
+    redirect(`/auth/signin?callbackUrl=${encodeURIComponent('/business/dashboard')}`);
   }
 
   // Real dashboard metrics for this business (previously hardcoded to zero)

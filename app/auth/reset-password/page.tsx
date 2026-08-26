@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BackToSiteLink } from '@/components/auth/BackToSiteLink';
@@ -137,16 +138,13 @@ function ResetPasswordForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password">New Password</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
-                placeholder="Enter new password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter new password"
+                autoComplete="new-password"
+                onChange={setPassword}
                 required
-                disabled={loading}
-                minLength={8}
-                className="w-full"
               />
               <p className="text-xs text-muted-foreground">
                 Must be at least 8 characters long
@@ -155,16 +153,13 @@ function ResetPasswordForm() {
 
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
+              <PasswordInput
                 id="confirmPassword"
-                type="password"
-                placeholder="Confirm new password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                autoComplete="new-password"
+                onChange={setConfirmPassword}
                 required
-                disabled={loading}
-                minLength={8}
-                className="w-full"
               />
             </div>
 

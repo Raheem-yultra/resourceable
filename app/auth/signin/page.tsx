@@ -8,13 +8,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Lock, LogIn, RefreshCw } from 'lucide-react';
+import { Mail, LogIn, RefreshCw } from 'lucide-react';
+import { PasswordInput } from '@/components/ui/password-input';
 import { BackToSiteLink } from '@/components/auth/BackToSiteLink';
+import { safeCallbackPath } from '@/lib/safe-redirect';
 
 function SignInPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const message = searchParams.get('message');
+  // Where the user was heading before they were asked to sign in. NextAuth adds
+  // this automatically, and every in-app "sign in to do X" link now sets it too.
+  // Only same-origin relative paths are honoured — an absolute URL here would let
+  // a crafted link bounce someone off the site straight after authenticating.
+  const callbackUrl = safeCallbackPath(searchParams.get('callbackUrl'));
   
   const [formData, setFormData] = useState({
     email: '',
@@ -26,6 +33,13 @@ function SignInPageContent() {
   const [needsVerification, setNeedsVerification] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
+
+  /** Append the pending destination to another auth screen's URL. */
+  const withCallback = (href: string) => {
+    if (!callbackUrl) return href;
+    const sep = href.includes('?') ? '&' : '?';
+    return `${href}${sep}callbackUrl=${encodeURIComponent(callbackUrl)}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,17 +81,25 @@ function SignInPageContent() {
         return;
       }
 
-      // Fetch session to get user role
+      // Somewhere specific was asked for — a listing they wanted to review, the
+      // inbox they clicked through to. Honour it instead of dropping everyone on
+      // their role's landing page, which used to mean losing your place entirely.
+      if (callbackUrl) {
+        router.push(callbackUrl);
+        router.refresh();
+        return;
+      }
+
+      // Otherwise fall back to the natural home for the account's role.
       const response = await fetch('/api/auth/session');
       const session = await response.json();
 
-      // Redirect based on role
       if (session?.user?.role === 'BUSINESS') {
         router.push('/business/dashboard');
       } else if (session?.user?.role === 'ADMIN') {
         router.push('/admin');
       } else {
-        router.push('/search');
+        router.push('/browse');
       }
       
       router.refresh();
@@ -135,28 +157,23 @@ function SignInPageContent() {
               <div className="flex items-center justify-between">
                 <Label htmlFor="password" className="text-sm font-medium">Password</Label>
                 <Link 
-                  href="/auth/forgot-password" 
+                  href={withCallback('/auth/forgot-password')} 
                   className="text-xs text-primary hover:underline"
                 >
                   Forgot password?
                 </Link>
               </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => {
-                    setFormData({ ...formData, password: e.target.value });
-                    if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: undefined });
-                  }}
-                  className={`pl-10 ${fieldErrors.password ? 'border-destructive' : ''}`}
-                  aria-invalid={!!fieldErrors.password}
-                  required
-                />
-              </div>
+              <PasswordInput
+                id="password"
+                value={formData.password}
+                autoComplete="current-password"
+                invalid={!!fieldErrors.password}
+                onChange={(value) => {
+                  setFormData({ ...formData, password: value });
+                  if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: undefined });
+                }}
+                required
+              />
               {fieldErrors.password && <p className="field-error" role="alert">{fieldErrors.password}</p>}
             </div>
 
@@ -196,12 +213,12 @@ function SignInPageContent() {
             {/* Sign Up Links */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Button asChild variant="outline" className="min-h-[48px]">
-                <Link href="/auth/signup">
+                <Link href={withCallback('/auth/signup')}>
                   <span className="text-sm">Sign Up</span>
                 </Link>
               </Button>
               <Button asChild variant="outline" className="min-h-[48px]">
-                <Link href="/auth/signup?role=BUSINESS">
+                <Link href={withCallback('/auth/signup?role=BUSINESS')}>
                   <span className="text-sm">Business Signup</span>
                 </Link>
               </Button>

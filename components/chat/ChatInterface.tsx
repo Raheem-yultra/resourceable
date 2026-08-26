@@ -210,10 +210,12 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
             {partner?.business?.businessName && partner?.name && (
               <p className="text-sm text-muted-foreground">{partner.name}</p>
             )}
-            <span className={`text-xs px-2 py-0.5 rounded-full inline-block mt-1 ${
+            {/* Theme tokens, not fixed light-mode colours: the site has a dark
+                mode and these badges were unreadable in it. */}
+            <span className={`text-xs px-2 py-0.5 rounded-full inline-block mt-1 border ${
               partner?.role === 'BUSINESS'
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-gray-100 text-gray-700'
+                ? 'bg-primary/10 text-primary border-primary/30'
+                : 'bg-muted text-muted-foreground border-border'
             }`}>
               {partner?.role === 'BUSINESS' ? '🏢 Business' : '👤 User'}
             </span>
@@ -221,7 +223,7 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0 bg-gradient-to-b from-slate-50/50 to-white">
+      <CardContent className="flex-1 flex flex-col p-0 bg-background">
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4" role="log" aria-live="polite" aria-relevant="additions text">
           {messages.length === 0 ? (
@@ -257,7 +259,7 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
                         className={`rounded-2xl p-4 shadow-sm ${
                           isOwn
                             ? 'bg-primary text-primary-foreground rounded-br-sm'
-                            : 'bg-white border border-gray-200 rounded-bl-sm'
+                            : 'bg-card text-card-foreground border border-border rounded-bl-sm'
                         }`}
                       >
                         <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
@@ -289,7 +291,7 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
         </div>
 
         {/* Input Area */}
-        <div className="border-t bg-white p-4 shadow-inner">
+        <div className="border-t bg-card p-4">
           {(loadError || errorMessage) && (
             <p className="mb-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
               {loadError || errorMessage}
@@ -319,7 +321,7 @@ export function ChatInterface({ currentUserId, partnerId, initialMessage }: Chat
                   ? `Send your first message to ${partnerName}...`
                   : "Type your message..."
                 }
-                className="resize-none min-h-[80px] border-gray-300 focus:border-primary"
+                className="resize-none min-h-[80px] focus:border-primary"
                 rows={3}
                 disabled={sending}
                 maxLength={5000}

@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Lock, User, MapPin, Building2, Phone } from 'lucide-react';
+import { Mail, User, MapPin, Building2, Phone } from 'lucide-react';
+import { PasswordInput } from '@/components/ui/password-input';
 import { BackToSiteLink } from '@/components/auth/BackToSiteLink';
+import { safeCallbackPath } from '@/lib/safe-redirect';
 
 // What a provider account actually involves, stated before they commit to typing.
 // Signup only opens the account; the details and listings come after email
@@ -23,6 +25,10 @@ function SignUpPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roleParam = searchParams.get('role');
+  // Carried through from a "sign in to do X" link so that the destination
+  // survives someone realising, on the sign-in screen, that they need an account
+  // first. Same-origin paths only.
+  const callbackUrl = safeCallbackPath(searchParams.get('callbackUrl'));
   
   const [formData, setFormData] = useState({
     email: '',
@@ -126,8 +132,12 @@ function SignUpPageContent() {
         return;
       }
 
-      // Redirect to verify email page (email prefills the resend form there)
-      router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email.trim().toLowerCase())}`);
+      // Redirect to verify email page (email prefills the resend form there). The
+      // pending destination rides along so that verifying, then signing in, still
+      // lands on the listing or page that started all this.
+      const verifyParams = new URLSearchParams({ email: formData.email.trim().toLowerCase() });
+      if (callbackUrl) verifyParams.set('callbackUrl', callbackUrl);
+      router.push(`/auth/verify-email?${verifyParams.toString()}`);
     } catch (err) {
       setError('An error occurred. Please try again.');
       setLoading(false);
@@ -308,19 +318,14 @@ function SignUpPageContent() {
             {/* Password Field */}
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
+              <PasswordInput
                   id="password"
-                  type="password"
-                  placeholder="••••••••"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className={`pl-10 ${fieldErrors.password ? 'border-destructive' : ''}`}
-                  aria-invalid={!!fieldErrors.password}
+                  autoComplete="new-password"
+                  invalid={!!fieldErrors.password}
+                  onChange={(value) => setFormData({ ...formData, password: value })}
                   required
                 />
-              </div>
               {fieldErrors.password ? (
                 <p className="text-xs text-destructive" role="alert">{fieldErrors.password}</p>
               ) : (
@@ -333,19 +338,14 @@ function SignUpPageContent() {
               <Label htmlFor="confirmPassword" className="text-sm font-medium">
                 Confirm Password
               </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className={`pl-10 ${fieldErrors.confirmPassword ? 'border-destructive' : ''}`}
-                  aria-invalid={!!fieldErrors.confirmPassword}
-                  required
-                />
-              </div>
+              <PasswordInput
+                id="confirmPassword"
+                value={formData.confirmPassword}
+                autoComplete="new-password"
+                invalid={!!fieldErrors.confirmPassword}
+                onChange={(value) => setFormData({ ...formData, confirmPassword: value })}
+                required
+              />
               {fieldErrors.confirmPassword && <p className="text-xs text-destructive" role="alert">{fieldErrors.confirmPassword}</p>}
             </div>
 

@@ -20,8 +20,8 @@ export default function NotFound() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full min-h-[48px]">
-              <Link href="/search">
-                Search services
+              <Link href="/browse">
+                Browse services
               </Link>
             </Button>
           </div>

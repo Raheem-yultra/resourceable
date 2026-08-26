@@ -14,6 +14,9 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Business Details - ResourceAble',
   description: 'Your business identity, location, and the credentials we verify',
+  // Private. robots.txt already disallows this path; the page-level directive
+  // is what still holds if a URL reaches a crawler another way.
+  robots: { index: false, follow: false },
 };
 
 export default async function BusinessProfilePage() {
@@ -21,7 +24,7 @@ export default async function BusinessProfilePage() {
 
   // Redirect if not signed in or not a business user
   if (!session?.user || session.user.role !== 'BUSINESS') {
-    redirect('/auth/signin');
+    redirect(`/auth/signin?callbackUrl=${encodeURIComponent('/business/profile')}`);
   }
 
   const business = await prisma.business.findUnique({

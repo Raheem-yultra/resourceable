@@ -15,7 +15,7 @@ export default async function ChatPage(
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
-    redirect('/auth/signin');
+    redirect(`/auth/signin?callbackUrl=${encodeURIComponent(`/messages/${params.userId}`)}`);
   }
 
   return (

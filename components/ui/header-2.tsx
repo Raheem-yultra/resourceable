@@ -8,7 +8,8 @@ import { cn } from '@/lib/utils';
 import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
 import { useScroll } from '@/hooks/use-scroll';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Heart } from 'lucide-react';
+import { useSavedListings } from '@/hooks/use-saved-listings';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +44,10 @@ export function Header() {
 	const scrolled = useScroll(10);
 	const { data: session } = useSession();
 	const pathname = usePathname();
+	// The shortlist is the one thing in the nav that belongs to the visitor rather
+	// than to the site, so it carries its count — a saved listing you cannot see
+	// the tally of is a saved listing you forget you have.
+	const { saved } = useSavedListings();
 
 	// Define navigation links based on user role. Guests and families (USER) also
 	// get the marketplace nav (Browse ▾ / School / Events / Resources) rendered
@@ -59,7 +64,7 @@ export function Header() {
 			// Admin user
 			return [
 				{ label: 'Admin Panel', href: '/admin' },
-				{ label: 'Search Services', href: '/search' },
+				{ label: 'Browse', href: '/browse' },
 				{ label: 'Messages', href: '/messages' },
 			];
 		}
@@ -185,6 +190,24 @@ export function Header() {
 							))}
 						</>
 					)}
+					{showMarketplace && (
+						<Link
+							className={cn(buttonVariants({ variant: 'ghost' }), 'gap-1.5')}
+							href="/saved"
+							aria-current={isActiveLink('/saved') ? 'page' : undefined}
+						>
+							<Heart
+								className={cn('h-4 w-4', saved.length > 0 && 'fill-destructive text-destructive')}
+								aria-hidden="true"
+							/>
+							Saved
+							{saved.length > 0 && (
+								<span className="rounded-full bg-primary/10 px-1.5 text-xs font-semibold text-primary tabular-nums">
+									{saved.length}
+								</span>
+							)}
+						</Link>
+					)}
 					{links.map((link, i) => (
 						<Link
 							key={i}
@@ -260,6 +283,20 @@ export function Header() {
 									{link.label}
 								</Link>
 							))}
+						{showMarketplace && (
+							<Link
+								className={buttonVariants({ variant: 'ghost', className: 'justify-start gap-2' })}
+								href="/saved"
+								onClick={() => setOpen(false)}
+								aria-current={isActiveLink('/saved') ? 'page' : undefined}
+							>
+								<Heart
+									className={cn('h-4 w-4', saved.length > 0 && 'fill-destructive text-destructive')}
+									aria-hidden="true"
+								/>
+								Saved{saved.length > 0 ? ` (${saved.length})` : ''}
+							</Link>
+						)}
 						{links.map((link) => (
 							<Link
 								key={link.label}
