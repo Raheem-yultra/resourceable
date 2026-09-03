@@ -9,19 +9,28 @@ import { ResourcesManager } from '@/components/admin/ResourcesManager';
 import { AuditLog } from '@/components/admin/AuditLog';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AdminTabs } from '@/components/admin/AdminTabs';
+import { TabsContent } from '@/components/ui/tabs';
 import { ShieldCheck } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Admin Dashboard - ResourceAble',
   description: 'Manage business verifications and platform content',
+  // Private. robots.txt already disallows this path; the page-level directive
+  // is what still holds if a URL reaches a crawler another way.
+  robots: { index: false, follow: false },
 };
 
-export default async function AdminDashboard() {
-  const session = await getServerSession(authOptions);
+export default async function AdminDashboard(props: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const [session, searchParams] = await Promise.all([
+    getServerSession(authOptions),
+    props.searchParams,
+  ]);
 
   if (!session?.user || session.user.role !== 'ADMIN') {
-    redirect('/');
+    redirect(`/auth/signin?callbackUrl=${encodeURIComponent('/admin')}`);
   }
 
   return (
@@ -37,16 +46,12 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="flex w-full flex-wrap justify-start gap-1 overflow-x-auto">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="verifications">Verification Queue</TabsTrigger>
-            <TabsTrigger value="businesses">Businesses</TabsTrigger>
-            <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-            <TabsTrigger value="resources">Resources</TabsTrigger>
-            <TabsTrigger value="audit">Audit Log</TabsTrigger>
-          </TabsList>
+        {/* The open tab lives in the URL. An admin working the verification queue
+            reloads constantly — after approving, after a failed action, after
+            coming back from a provider's page — and every one of those used to
+            dump them back on Overview to click their way in again. It also makes
+            a tab linkable: "have a look at the reports queue" can be a URL. */}
+        <AdminTabs initialTab={searchParams.tab}>
 
           <TabsContent value="overview" className="space-y-4">
             <AdminMetrics />
@@ -75,7 +80,7 @@ export default async function AdminDashboard() {
           <TabsContent value="audit" className="space-y-4">
             <AuditLog />
           </TabsContent>
-        </Tabs>
+        </AdminTabs>
       </div>
     </div>
   );

@@ -3,6 +3,8 @@ import { getPublicBaseUrl } from '@/lib/env';
 import './globals.css';
 import { ConditionalNavbar } from '@/components/layout/ConditionalNavbar';
 import { Providers } from '@/components/layout/Providers';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { organizationSchema, websiteSchema } from '@/lib/structured-data';
 
 const SITE_NAME = 'ResourceAble';
 const SITE_TITLE = 'ResourceAble - Disability Services Directory';
@@ -37,7 +39,21 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+    // What Google may show in a result. Defaults are conservative — an unset
+    // max-snippet can mean a two-line description where the page deserves a
+    // paragraph, and unset max-image-preview suppresses the large image that this
+    // site's Open Graph card exists to provide.
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-snippet': -1,
+      'max-image-preview': 'large',
+      'max-video-preview': -1,
+    },
   },
+  // Self-canonical for the homepage. Child routes override this with their own;
+  // without it here, the homepage is the one page with no canonical at all.
+  alternates: { canonical: '/' },
 };
 
 export default function RootLayout({
@@ -66,6 +82,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="ResourceAble" />
         <link rel="manifest" href="/site.webmanifest" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* Site-level schema, emitted once. The WebSite entry carries the
+            SearchAction that can earn a search box inside the Google result. */}
+        <JsonLd data={[websiteSchema(), organizationSchema()]} />
       </head>
       <body className="site-shell">
         <Providers>

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { prisma } from '@/lib/prisma';
 import { getPublicBaseUrl } from '@/lib/env';
-import { BROWSE_CATEGORIES } from '@/lib/listing-taxonomy';
+import { BROWSE_CATEGORIES, RESOURCE_TOPICS } from '@/lib/listing-taxonomy';
 
 // Regenerate hourly. Providers are approved throughout the day, and a listing that
 // is live but absent from the sitemap is invisible to the families searching for it.
@@ -13,9 +13,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${baseUrl}/`, lastModified: now, changeFrequency: 'weekly', priority: 1 },
+    // /search is a permanent redirect to /browse and is deliberately absent:
+    // listing both would ask crawlers to index two URLs for one page.
     { url: `${baseUrl}/browse`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: `${baseUrl}/search`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
     { url: `${baseUrl}/resources`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
+    // Topic pages are the one filtered view worth indexing: a fixed, curated set
+    // of six, each a distinct thing a family searches for. The listing filters are
+    // unbounded and combinatorial, which is why they are canonicalised away instead.
+    ...RESOURCE_TOPICS.map((topic) => ({
+      url: `${baseUrl}/resources?topic=${encodeURIComponent(topic)}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
     ...BROWSE_CATEGORIES.map((c) => ({
       url: `${baseUrl}/browse/${c.slug}`,
       lastModified: now,

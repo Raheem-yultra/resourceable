@@ -158,6 +158,17 @@ export interface BrowseCategory {
   ageGroup?: 'INFANT' | 'TODDLER' | 'CHILD' | 'TEEN' | 'ADULT';
   /** Also surface the Resources knowledge base on this category. */
   includesResources?: boolean;
+  /**
+   * Search-result title and description.
+   *
+   * Written per category rather than derived from `title`/`subtitle`, because
+   * those two are page furniture and these are the only sentence most people will
+   * ever read about this page. They are what shows in a search result and in a
+   * link preview, so they lead with what a family is actually typing ("speech
+   * therapy near me") rather than with the site's own section names. Kept under
+   * roughly 60 and 155 characters so neither gets truncated mid-word.
+   */
+  seo: { title: string; description: string };
 }
 
 export const BROWSE_CATEGORIES: BrowseCategory[] = [
@@ -168,6 +179,11 @@ export const BROWSE_CATEGORIES: BrowseCategory[] = [
     subtitle: 'Everyday services from verified providers near you.',
     icon: 'Stethoscope',
     listingType: 'SERVICE',
+    seo: {
+      title: 'Disability Services Near You | ResourceAble',
+      description:
+        'Find verified dentists, opticians, barbers, home health aides and other everyday services experienced with disability and additional needs.',
+    },
   },
   {
     slug: 'therapies',
@@ -176,6 +192,11 @@ export const BROWSE_CATEGORIES: BrowseCategory[] = [
     subtitle: 'Speech, occupational, behavioural and other therapies near you.',
     icon: 'HeartHandshake',
     listingType: 'THERAPY',
+    seo: {
+      title: 'Speech, OT & ABA Therapy Providers | ResourceAble',
+      description:
+        'Search verified speech, occupational, physical, ABA, music and feeding therapy providers near you. Filter by age, disability and distance.',
+    },
   },
   {
     slug: 'shop',
@@ -184,6 +205,11 @@ export const BROWSE_CATEGORIES: BrowseCategory[] = [
     subtitle: 'Adaptive equipment, sensory tools, and assistive products.',
     icon: 'ShoppingBag',
     listingType: 'SHOP',
+    seo: {
+      title: 'Adaptive Equipment & Sensory Products | ResourceAble',
+      description:
+        'Browse mobility aids, sensory tools, AAC communication devices, adaptive clothing and safety equipment from verified sellers.',
+    },
   },
   {
     slug: 'school',
@@ -192,6 +218,11 @@ export const BROWSE_CATEGORIES: BrowseCategory[] = [
     subtitle: 'Special education, inclusive programs, tutoring, and transition support.',
     icon: 'GraduationCap',
     listingType: 'SCHOOL',
+    seo: {
+      title: 'Special Education Schools & Programs | ResourceAble',
+      description:
+        'Find special education schools, inclusive programs, tutoring, early intervention and transition or life-skills programs near you.',
+    },
   },
   {
     slug: 'events-resources',
@@ -202,6 +233,11 @@ export const BROWSE_CATEGORIES: BrowseCategory[] = [
     icon: 'CalendarDays',
     listingType: 'EVENT',
     includesResources: true,
+    seo: {
+      title: 'Support Groups, Workshops & Free Guides | ResourceAble',
+      description:
+        'Local support groups, camps, workshops and IEP clinics to attend — plus free guides on benefits, education rights and crisis hotlines.',
+    },
   },
   {
     slug: '21-plus',
@@ -211,6 +247,11 @@ export const BROWSE_CATEGORIES: BrowseCategory[] = [
       'Adult and transition-age services, therapies, programs, and events across every category.',
     icon: 'UserRound',
     ageGroup: 'ADULT',
+    seo: {
+      title: 'Adult & Transition-Age Disability Services | ResourceAble',
+      description:
+        'Services, therapies, programs and events for adults and transition-age young people, across every category. Support does not stop at 21.',
+    },
   },
 ];
 

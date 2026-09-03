@@ -5,6 +5,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ageGroupFilterValues } from '@/lib/listing-taxonomy';
 import { rateLimit, clientIp, tooManyRequests } from '@/lib/rate-limit';
+import { zipCentroid, haversineMiles, boundingBox, type Coordinates } from '@/lib/geo';
+import { LISTING_CARD_INCLUDE, toListingCard } from '@/lib/listing-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,10 +35,10 @@ const searchParamsSchema = z.object({
   radius: z.number().int().min(1).max(100).optional(), // miles
   page: z.number().int().min(1).default(1),
   limit: z.number().int().min(1).max(50).default(20),
-  // No 'distance': ranking by proximity needs the geo maths that getOrderBy does
-  // not implement, and accepting it silently returned relevance order instead —
-  // a wrong answer dressed as the requested one. Rejected with a 400 until it exists.
-  sortBy: z.enum(['relevance', 'rating', 'price', 'newest']).default('relevance'),
+  // 'distance' is accepted now that lib/geo actually measures it. It still needs a
+  // resolvable origin: asked for without one, the response falls back to relevance
+  // AND says so in `location`, rather than silently returning a different ordering.
+  sortBy: z.enum(['relevance', 'rating', 'price', 'newest', 'distance']).default('relevance'),
 }).refine(
   (params) => params.priceMin === undefined || params.priceMax === undefined || params.priceMin <= params.priceMax,
   {
@@ -46,6 +48,21 @@ const searchParamsSchema = z.object({
 );
 
 type SearchParams = z.infer<typeof searchParamsSchema>;
+
+/** Matches the filter panel's slider default, so omitting radius means the same thing on both sides. */
+const DEFAULT_RADIUS_MILES = 25;
+
+/**
+ * Ceiling on rows pulled into memory for the exact-distance pass.
+ *
+ * A proximity search cannot paginate in SQL: the bounding box is a superset of
+ * the circle, so the corner rows have to be measured and dropped before the page
+ * boundaries are known. The box already restricts this hard (a 100-mile radius is
+ * a small slice of the country), and the cap stops a pathological query from
+ * loading the whole table. If it is ever hit, the extra rows were the furthest
+ * ones — the least likely to matter for "near me".
+ */
+const PROXIMITY_SCAN_CAP = 1_000;
 
 export async function GET(req: NextRequest) {
   try {
@@ -157,9 +174,25 @@ async function searchServices(params: SearchParams, userId?: string) {
     ];
   }
 
-  // Location filters
+  // Location filters.
+  //
+  // A ZIP resolves to a centre (lib/geo) so "within N miles" can mean what it
+  // says. When it resolves, the query is narrowed to a bounding box around that
+  // centre and the exact circle is trimmed after the fetch; when it does not —
+  // no provider in that ZIP has coordinates — we fall back to the old prefix
+  // match rather than returning an empty page for a ZIP that simply isn't mapped.
+  const origin: Coordinates | null = params.zipCode ? await zipCentroid(params.zipCode) : null;
+  const radiusMiles = params.radius ?? DEFAULT_RADIUS_MILES;
+  const useProximity = !!origin;
+
   if (params.zipCode) {
-    where.business.zipCode = { contains: params.zipCode };
+    if (origin) {
+      const box = boundingBox(origin, radiusMiles);
+      where.business.latitude = { gte: box.minLat, lte: box.maxLat };
+      where.business.longitude = { gte: box.minLon, lte: box.maxLon };
+    } else {
+      where.business.zipCode = { contains: params.zipCode };
+    }
   }
   if (params.city) {
     where.business.city = { contains: params.city, mode: 'insensitive' };
@@ -248,8 +281,53 @@ async function searchServices(params: SearchParams, userId?: string) {
     };
   }
 
-  // Build order by clause
-  const orderBy = getOrderBy(sortBy);
+  // Build order by clause. `distance` has no SQL expression to sort on — it is
+  // computed per row below — so the database sorts by the fallback and the exact
+  // ordering is applied after measuring.
+  const orderBy = getOrderBy(sortBy === 'distance' ? 'relevance' : sortBy);
+
+  const include = LISTING_CARD_INCLUDE;
+
+  // Proximity searches take a different path: SQL narrows to the bounding box,
+  // then the exact circle, the distance ordering, and the page boundaries are all
+  // resolved here — because none of the three is knowable until every candidate
+  // has actually been measured.
+  if (useProximity && origin) {
+    const candidates = await prisma.service.findMany({
+      relationLoadStrategy: 'join',
+      where,
+      include,
+      take: PROXIMITY_SCAN_CAP,
+      orderBy,
+    });
+
+    const withDistance = candidates
+      .map((service: any) => ({
+        service,
+        distance:
+          service.business?.latitude != null && service.business?.longitude != null
+            ? haversineMiles(origin, {
+                latitude: service.business.latitude,
+                longitude: service.business.longitude,
+              })
+            : null,
+      }))
+      // Trim the bounding box's corners back to a true circle.
+      .filter((row) => row.distance !== null && row.distance <= radiusMiles);
+
+    if (sortBy === 'distance') {
+      withDistance.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+    }
+
+    const pageRows = withDistance.slice(skip, skip + limit);
+
+    return buildResponse(
+      pageRows.map((row) => ({ ...row.service, __distance: row.distance })),
+      withDistance.length,
+      params,
+      { zipCode: params.zipCode ?? null, radiusMiles, resolved: true, sortedByDistance: sortBy === 'distance' }
+    );
+  }
 
   // Execute query with relations. `relationLoadStrategy: 'join'` collapses the
   // main query + every relation into ONE round-trip (LATERAL join) — critical on
@@ -258,51 +336,7 @@ async function searchServices(params: SearchParams, userId?: string) {
     prisma.service.findMany({
       relationLoadStrategy: 'join',
       where,
-      include: {
-        business: {
-          select: {
-            id: true,
-            userId: true,
-            businessName: true,
-            city: true,
-            state: true,
-            zipCode: true,
-            address: true,
-            phone: true,
-            email: true,
-            website: true,
-            logo: true,
-            verificationStatus: true,
-            averageRating: true,
-            totalReviews: true,
-            latitude: true,
-            longitude: true,
-          },
-        },
-        serviceDisabilities: {
-          include: {
-            disability: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-              },
-            },
-          },
-        },
-        serviceTypes: {
-          include: {
-            serviceType: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-                category: true,
-              },
-            },
-          },
-        },
-      },
+      include,
       skip,
       take: limit,
       orderBy,
@@ -310,48 +344,41 @@ async function searchServices(params: SearchParams, userId?: string) {
     prisma.service.count({ where }),
   ]);
 
-  // Transform response for cleaner API
-  const transformedServices = services.map((service: any) => ({
-    id: service.id,
-    name: service.name,
-    slug: service.slug,
-    description: service.description,
-    shortDescription: service.shortDescription,
-    priceRange: service.priceRange,
-    priceMin: service.priceMin,
-    priceMax: service.priceMax,
-    ageGroups: service.ageGroups,
-    insuranceAccepted: service.insuranceAccepted,
-    insuranceProviders: service.insuranceProviders,
-    languages: service.languages,
-    duration: service.duration,
-    frequency: service.frequency,
-    isAvailable: service.isAvailable,
-    // Category-expansion: listing kind, trust tier, and type-specific fields the
-    // card uses to render its badge + secondary info line (plan §7.5).
-    listingType: service.listingType,
-    verificationLevel: service.verificationLevel,
-    deliveryMode: service.deliveryMode,
-    condition: service.condition,
-    isForRent: service.isForRent,
-    brand: service.brand,
-    images: service.images,
-    enrollmentStatus: service.enrollmentStatus,
-    gradeLevels: service.gradeLevels,
-    programType: service.programType,
-    isVirtual: service.isVirtual,
-    rsvpCount: service.rsvpCount,
-    capacity: service.capacity,
-    startDate: service.startDate,
-    endDate: service.endDate,
-    // Per-listing rating (multi-listing marketplace) — each listing reviewed on its own.
-    averageRating: service.averageRating,
-    totalReviews: service.totalReviews,
-    business: service.business,
-    disabilities: service.serviceDisabilities.map((sd: any) => sd.disability),
-    serviceTypes: service.serviceTypes.map((st: any) => st.serviceType),
-    createdAt: service.createdAt,
-  }));
+  return buildResponse(services, total, params, {
+    zipCode: params.zipCode ?? null,
+    radiusMiles: params.zipCode ? radiusMiles : null,
+    // A ZIP was given but no provider in it carries coordinates, so "within N
+    // miles" could not be honoured. The UI says so instead of quietly showing
+    // prefix matches as though they were nearby.
+    resolved: false,
+    sortedByDistance: false,
+  });
+}
+
+interface LocationContext {
+  zipCode: string | null;
+  radiusMiles: number | null;
+  resolved: boolean;
+  sortedByDistance: boolean;
+}
+
+/**
+ * Shared response shape for both query paths.
+ *
+ * Both branches must agree on every field name the client reads, so they share
+ * one serializer — the proximity path only adds `distance`, carried in on the
+ * private `__distance` key so the transform stays a pure mapping.
+ */
+function buildResponse(
+  services: any[],
+  total: number,
+  params: SearchParams,
+  location: LocationContext
+) {
+  const { page, limit } = params;
+  const skip = (page - 1) * limit;
+
+  const transformedServices = services.map(toListingCard);
 
   return {
     services: transformedServices,
@@ -362,6 +389,7 @@ async function searchServices(params: SearchParams, userId?: string) {
       totalPages: Math.ceil(total / limit),
       hasMore: skip + limit < total,
     },
+    location,
     filters: {
       applied: getAppliedFilters(params),
     },

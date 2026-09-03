@@ -249,8 +249,8 @@ export function MessageInbox({ currentUserId }: MessageInboxProps) {
                         )}
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                           conv.partner.role === 'BUSINESS'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-gray-100 text-gray-700'
+                            ? 'bg-primary/10 text-primary border border-primary/30'
+                            : 'bg-muted text-muted-foreground border border-border'
                         }`}>
                           {conv.partner.role === 'BUSINESS' ? '🏢 Business' : '👤 User'}
                         </span>

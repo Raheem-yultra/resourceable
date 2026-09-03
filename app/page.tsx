@@ -2,9 +2,15 @@
 
 import Link from 'next/link';
 import { useRef } from 'react';
+import { Stethoscope, HeartHandshake, ShoppingBag, GraduationCap, CalendarDays, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BROWSE_CATEGORIES } from '@/lib/listing-taxonomy';
 import TextCursorProximity from '@/components/ui/text-cursor-proximity';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+
+const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  Stethoscope, HeartHandshake, ShoppingBag, GraduationCap, CalendarDays, UserRound,
+};
 
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -71,7 +77,7 @@ export default function HomePage() {
                   size="lg"
                   className="text-base sm:text-lg lg:text-xl px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-7 h-auto font-semibold min-h-[48px] sm:min-h-[56px] lg:min-h-[60px] w-full sm:w-auto sm:min-w-[180px] lg:min-w-[200px]"
                 >
-                  <Link href="/search" aria-label="Search disability services">Find Services</Link>
+                  <Link href="/browse" aria-label="Find disability services">Find Services</Link>
                 </Button>
                 <Button 
                   asChild 
@@ -89,6 +95,48 @@ export default function HomePage() {
                 className="text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 h-auto min-h-[44px] sm:min-h-[48px] lg:min-h-[52px]"
               >
                 <Link href="/auth/signin">Already have an account? Sign In</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Where to actually start.
+            The site header is hidden on this page — the hero is full-bleed and the
+            nav sat on top of it — so until now the only ways off the landing page
+            were "Find Services", "List Your Business", and "Sign In". Every browse
+            category the nav offers on every other page was unreachable from the
+            one page most visitors arrive on. */}
+        <section className="w-full py-12 sm:py-16" aria-labelledby="browse-heading">
+          <div className="w-full px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto">
+            <h2 id="browse-heading" className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mb-3">
+              Browse by category
+            </h2>
+            <p className="text-center text-muted-foreground mb-8 sm:mb-10 max-w-2xl mx-auto">
+              No account needed — every listing below is open to browse.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+              {BROWSE_CATEGORIES.map((category) => {
+                const Icon = CATEGORY_ICONS[category.icon] || Stethoscope;
+                return (
+                  <Link
+                    key={category.slug}
+                    href={`/browse/${category.slug}`}
+                    className="group flex flex-col rounded-xl border bg-card p-4 sm:p-5 transition-all hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[110px]"
+                  >
+                    <Icon className="mb-2 h-6 w-6 text-primary sm:h-7 sm:w-7" aria-hidden="true" />
+                    <span className="text-base font-semibold group-hover:text-primary sm:text-lg">
+                      {category.label}
+                    </span>
+                    <span className="mt-1 line-clamp-2 text-xs text-muted-foreground sm:text-sm">
+                      {category.subtitle}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="mt-6 text-center">
+              <Button asChild variant="outline" size="lg" className="min-h-[48px]">
+                <Link href="/resources">Free guides &amp; crisis directories</Link>
               </Button>
             </div>
           </div>
@@ -133,6 +181,13 @@ export default function HomePage() {
 
       <footer className="w-full border-t py-6 sm:py-8 lg:py-10" role="contentinfo">
         <div className="w-full px-4 sm:px-6 lg:px-12 text-center text-muted-foreground">
+          <nav aria-label="Footer" className="mb-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
+            <Link href="/browse" className="hover:text-foreground">Browse all listings</Link>
+            <Link href="/resources" className="hover:text-foreground">Resources</Link>
+            <Link href="/saved" className="hover:text-foreground">Saved</Link>
+            <Link href="/auth/signup?role=BUSINESS" className="hover:text-foreground">List your business</Link>
+            <Link href="/auth/signin" className="hover:text-foreground">Sign in</Link>
+          </nav>
           <p className="text-sm sm:text-base">&copy; {new Date().getFullYear()} ResourceAble. All rights reserved.</p>
         </div>
       </footer>

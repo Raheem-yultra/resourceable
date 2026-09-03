@@ -8,13 +8,22 @@ import { BusinessSetupChecklist } from '@/components/business/BusinessSetupCheck
 import { buildSetupSteps, missingDetailFields } from '@/lib/business-setup';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Info } from 'lucide-react';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Your Listings - ResourceAble',
+  description: 'Add, edit, or pause the services, products, programs and events you offer',
+  // Private. robots.txt already disallows this path; the page-level directive
+  // is what still holds if a URL reaches a crawler another way.
+  robots: { index: false, follow: false },
+};
 
 export default async function BusinessListingsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user || session.user.role !== 'BUSINESS') {
-    redirect('/auth/signin');
+    redirect(`/auth/signin?callbackUrl=${encodeURIComponent('/business/listings')}`);
   }
 
   const business = await prisma.business.findUnique({

@@ -1,10 +1,43 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { BookOpen, ExternalLink, FileText, LifeBuoy, ScrollText } from 'lucide-react';
 import { RESOURCE_TOPICS } from '@/lib/listing-taxonomy';
+import { pageMetadata } from '@/lib/seo';
 import { EmptyState } from '@/components/ui/empty-state';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Topic pages are worth indexing on their own.
+ *
+ * Unlike the listing filters — which are unbounded and combinatorial — the topic
+ * tags are a fixed, curated set of six. Each is a genuinely distinct page a family
+ * might search for ("special education rights guide"), so each gets its own title,
+ * description and self-canonical rather than being collapsed into /resources.
+ */
+export async function generateMetadata(props: {
+  searchParams: Promise<{ topic?: string }>;
+}): Promise<Metadata> {
+  const { topic } = await props.searchParams;
+  const known = topic && (RESOURCE_TOPICS as readonly string[]).includes(topic) ? topic : undefined;
+
+  const title = known
+    ? `${known} — Free Disability Guides | ResourceAble`
+    : 'Free Disability Guides, Benefits & Crisis Directories | ResourceAble';
+  const description = known
+    ? `Free guides and directories on ${known.toLowerCase()} for families navigating disability support. No account needed.`
+    : 'Free guides on benefits, legal rights, IEP and 504 plans, financial assistance, insurance navigation and crisis hotlines. No account needed.';
+
+  return pageMetadata({
+    title,
+    description,
+    // An unrecognised ?topic= is a URL we did not create and will not index;
+    // it canonicalises to the unfiltered page.
+    path: known ? `/resources?topic=${encodeURIComponent(known)}` : '/resources',
+  });
+}
+
 
 // Resources is a knowledge base, NOT part of the listing search index (plan §2.1).
 // It's browsed by topic tag rather than by location/price/verification.

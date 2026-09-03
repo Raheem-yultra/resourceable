@@ -1,16 +1,73 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { listingTypeMeta } from '@/lib/listing-taxonomy';
+import { listingTypeMeta, BROWSE_CATEGORIES } from '@/lib/listing-taxonomy';
 import { ReviewForm } from '@/components/listing/ReviewForm';
 import { ReportButton } from '@/components/listing/ReportButton';
 import { LiabilityDisclaimer } from '@/components/listing/LiabilityDisclaimer';
 import { ListingContactActions } from '@/components/listing/ListingContactActions';
-import { Star, MapPin, ShieldCheck, CheckCircle, ShieldQuestion, ArrowLeft, Building2 } from 'lucide-react';
+import { BackLink } from '@/components/ui/back-link';
+import { Breadcrumbs, type Crumb } from '@/components/ui/breadcrumbs';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { breadcrumbSchema, listingSchema } from '@/lib/structured-data';
+import { pageMetadata, truncateDescription } from '@/lib/seo';
+import { SaveListingButton } from '@/components/listing/SaveListingButton';
+import { Star, MapPin, ShieldCheck, CheckCircle, ShieldQuestion, Building2 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Per-listing title, description, and share card.
+ *
+ * Every page on the site used to inherit the root metadata, so a parent sending
+ * "look at this speech therapist" into a group chat produced a link previewing as
+ * "ResourceAble - Disability Services Directory" — indistinguishable from every
+ * other link anyone had ever shared. Sharing a provider is the single most common
+ * thing a family does with this site; the preview is worth getting right.
+ *
+ * Only publicly visible listings get indexable metadata. An owner previewing a
+ * pending listing still sees the page (the component allows it), but search
+ * engines must not be told about something the public cannot open.
+ */
+export async function generateMetadata(props: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await props.params;
+
+  const service = await prisma.service.findUnique({
+    where: { id },
+    select: {
+      name: true,
+      shortDescription: true,
+      description: true,
+      isActive: true,
+      business: {
+        select: { businessName: true, city: true, state: true, isActive: true, verificationStatus: true },
+      },
+    },
+  });
+
+  if (!service) return { title: 'Listing not found - ResourceAble' };
+
+  const place = [service.business.city, service.business.state].filter(Boolean).join(', ');
+  const publiclyVisible =
+    service.isActive && service.business.isActive && service.business.verificationStatus === 'APPROVED';
+
+  return pageMetadata({
+    title: `${service.name} — ${service.business.businessName}${place ? ` (${place})` : ''}`,
+    description: truncateDescription(
+      service.shortDescription ||
+        service.description ||
+        `${service.name} from ${service.business.businessName}${place ? ` in ${place}` : ''}.`
+    ),
+    path: `/listings/${id}`,
+    type: 'article',
+    // An owner can preview a pending listing, but search engines must not be told
+    // about something the public cannot open.
+    noindex: !publiclyVisible,
+  });
+}
 
 function Stars({ value, className = '' }: { value: number; className?: string }) {
   return (
@@ -38,7 +95,7 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
     relationLoadStrategy: 'join',
     where: { id: params.id },
     include: {
-      business: { select: { id: true, businessName: true, city: true, state: true, phone: true, email: true, website: true, verificationStatus: true, isActive: true, userId: true } },
+      business: { select: { id: true, businessName: true, address: true, addressLine2: true, city: true, state: true, zipCode: true, phone: true, email: true, website: true, verificationStatus: true, isActive: true, userId: true } },
       serviceTypes: { include: { serviceType: { select: { name: true, slug: true } } } },
       reviews: { where: { isPublished: true }, orderBy: { createdAt: 'desc' }, include: { user: { select: { name: true } } } },
     },
@@ -56,15 +113,54 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
   if (!publiclyVisible && !isOwner && !isAdmin) notFound();
 
   const meta = listingTypeMeta(service.listingType);
+
+  // Where this listing sits in the site. The category comes from the taxonomy so
+  // the trail always points at a route that exists, rather than being assembled
+  // from the listing type by hand.
+  const category = BROWSE_CATEGORIES.find((c) => c.listingType === service.listingType);
+  const trail: Crumb[] = [
+    { name: 'Home', path: '/' },
+    { name: 'Browse', path: '/browse' },
+    ...(category ? [{ name: category.label, path: `/browse/${category.slug}` }] : []),
+    { name: service.name, path: `/listings/${service.id}` },
+  ];
   const myReview = session?.user?.id ? service.reviews.find((r) => r.userId === session.user.id) : undefined;
   const canReview = !!session?.user && !isOwner;
 
   return (
     <div className="min-h-screen">
       <div className="page-wrap max-w-3xl">
-        <Link href="/browse" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6">
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to browse
-        </Link>
+        {/* Only advertise this listing to crawlers when the public can actually
+            open it — an owner previewing a pending listing still sees the page. */}
+        {publiclyVisible && (
+          <JsonLd
+            data={[
+              listingSchema({
+                id: service.id,
+                name: service.name,
+                description: service.description,
+                shortDescription: service.shortDescription,
+                listingType: service.listingType,
+                priceMin: service.priceMin != null ? Number(service.priceMin) : null,
+                priceMax: service.priceMax != null ? Number(service.priceMax) : null,
+                averageRating: service.averageRating,
+                totalReviews: service.totalReviews,
+                images: service.images ?? [],
+                business: service.business,
+                reviews: service.reviews,
+              }),
+              breadcrumbSchema(trail),
+            ]}
+          />
+        )}
+
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <Breadcrumbs trail={trail} />
+          {/* Browser Back, not a hard link to /browse: the visitor arrived from a
+              filtered search, and sending them to an unfiltered browse throws that
+              away. Falls back to /browse when there is no history to go back to. */}
+          <BackLink fallbackHref="/browse" label="Back to results" />
+        </div>
 
         {/* Header */}
         <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -114,7 +210,8 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
           />
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <SaveListingButton listingId={service.id} listingName={service.name} />
           <ReportButton serviceId={service.id} />
         </div>
 
@@ -132,7 +229,7 @@ export default async function ListingDetailPage(props: { params: Promise<{ id: s
             </div>
           ) : !session?.user ? (
             <p className="mb-6 text-sm text-muted-foreground">
-              <Link href="/auth/signin" className="text-primary hover:underline">Sign in</Link> to leave a review.
+              <Link href={`/auth/signin?callbackUrl=${encodeURIComponent(`/listings/${service.id}`)}`} className="text-primary hover:underline">Sign in</Link> to leave a review.
             </p>
           ) : null}
 

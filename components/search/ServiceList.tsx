@@ -4,12 +4,12 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  MapPin, Star, CheckCircle, Heart, Search, Loader2, ShieldCheck, ShieldQuestion,
+  MapPin, Star, CheckCircle, Heart, ShieldCheck, ShieldQuestion,
   Stethoscope, HeartHandshake, ShoppingBag, GraduationCap, CalendarDays,
   Package, Video, CalendarClock, Users,
 } from 'lucide-react';
-import { useState } from 'react';
 import { ContactModal } from './ContactModal';
+import { useSavedListings } from '@/hooks/use-saved-listings';
 import { ReportButton } from '@/components/listing/ReportButton';
 import { listingTypeMeta } from '@/lib/listing-taxonomy';
 
@@ -143,27 +143,27 @@ function TypeInfoLine({ service }: { service: Service }) {
   );
 }
 
-const PAGE_SIZE = 12;
-
 interface ServiceListProps {
   services: Service[];
 }
 
 function ServiceCard({ service }: { service: Service }) {
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { isSaved, toggle } = useSavedListings();
+  const saved = isSaved(service.id);
   const typeMeta = listingTypeMeta((service.listingType as any) || 'SERVICE');
   const TypeIcon = typeMeta ? TYPE_ICONS[typeMeta.icon] || Stethoscope : Stethoscope;
 
   return (
     <Card className="hover:shadow-lg transition-all duration-200 hover:border-primary/50 relative group">
       <button
-        onClick={() => setIsFavorite(!isFavorite)}
+        onClick={() => toggle(service.id)}
         className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-2 rounded-full bg-card/90 backdrop-blur-sm hover:bg-card transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
-        aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-        aria-pressed={isFavorite}
+        aria-label={saved ? `Remove ${service.name} from saved listings` : `Save ${service.name} for later`}
+        aria-pressed={saved}
+        title={saved ? 'Saved — find it under Saved' : 'Save for later'}
       >
         <Heart
-          className={`h-5 w-5 ${isFavorite ? 'fill-destructive text-destructive' : 'text-muted-foreground'}`}
+          className={`h-5 w-5 ${saved ? 'fill-destructive text-destructive' : 'text-muted-foreground'}`}
           aria-hidden="true"
         />
       </button>
@@ -226,9 +226,9 @@ function ServiceCard({ service }: { service: Service }) {
               </span>
             </div>
           )}
-          {service.distance && (
-            <span className="text-muted-foreground">
-              {service.distance.toFixed(1)} mi away
+          {service.distance != null && (
+            <span className="font-medium text-primary">
+              {service.distance < 0.1 ? 'Less than 0.1' : service.distance.toFixed(1)} mi away
             </span>
           )}
         </div>
@@ -302,74 +302,23 @@ function ServiceCard({ service }: { service: Service }) {
   );
 }
 
+/**
+ * Presentational grid of result cards.
+ *
+ * Paging used to live here, over the array it was handed — which meant "Load
+ * More" only ever revealed more of the one page the API had already returned,
+ * and every listing past the first twenty was unreachable however many times you
+ * pressed it. Fetching the next page is the caller's job now; this just renders
+ * what it is given.
+ */
 export function ServiceList({ services }: ServiceListProps) {
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [loadingMore, setLoadingMore] = useState(false);
-
-  const visibleServices = services.slice(0, visibleCount);
-  const hasMore = visibleCount < services.length;
-
-  const handleLoadMore = async () => {
-    setLoadingMore(true);
-    // Small delay to feel responsive and avoid layout flashing
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    setVisibleCount((prev) => prev + PAGE_SIZE);
-    setLoadingMore(false);
-  };
-
-  if (services.length === 0) {
-    return (
-      <div className="text-center py-8 sm:py-12" role="status">
-        <div className="max-w-md mx-auto px-4">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-            <Search className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground" />
-          </div>
-          <h3 className="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3">No services found</h3>
-          <p className="text-muted-foreground text-sm sm:text-base mb-4 sm:mb-6 leading-relaxed">
-            We couldn't find any services matching your search. Try adjusting your filters or search terms.
-          </p>
-          <Button variant="outline" size="lg" onClick={() => window.location.reload()} className="min-h-[44px] sm:min-h-[48px] w-full sm:w-auto">
-            Clear Filters and Start Over
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2" role="list" aria-label="Search results">
-        {visibleServices.map((service) => (
-          <div key={service.id} role="listitem">
-            <ServiceCard service={service} />
-          </div>
-        ))}
-      </div>
-
-      {hasMore && (
-        <div className="flex flex-col items-center gap-2 pt-6 sm:pt-8">
-          <Button
-            variant="outline"
-            size="lg"
-            className="min-h-[44px] sm:min-h-[48px] px-6 sm:px-8 w-full sm:w-auto"
-            onClick={handleLoadMore}
-            disabled={loadingMore}
-            aria-label={`Load more results (${services.length - visibleCount} remaining)`}
-          >
-            {loadingMore ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                Loading...
-              </>
-            ) : (
-              `Load More Results (${services.length - visibleCount} remaining)`
-            )}
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            Showing {visibleCount} of {services.length} results
-          </p>
+    <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2" role="list" aria-label="Search results">
+      {services.map((service) => (
+        <div key={service.id} role="listitem">
+          <ServiceCard service={service} />
         </div>
-      )}
+      ))}
     </div>
   );
 }

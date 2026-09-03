@@ -1,21 +1,56 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
+import { Breadcrumbs, type Crumb } from '@/components/ui/breadcrumbs';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { breadcrumbSchema, resourceSchema } from '@/lib/structured-data';
+import { pageMetadata, truncateDescription } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
+
+// Guides are the part of the site most likely to be found through a search engine
+// rather than through the directory, so each one carries its own title and summary.
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await props.params;
+  const resource = await prisma.resource.findUnique({
+    where: { slug },
+    select: { title: true, summary: true, body: true, isPublished: true },
+  });
+
+  if (!resource || !resource.isPublished) return { title: 'Resource not found - ResourceAble' };
+
+  return pageMetadata({
+    title: `${resource.title} - ResourceAble`,
+    description: truncateDescription(resource.summary || resource.body || resource.title),
+    path: `/resources/${slug}`,
+    type: 'article',
+  });
+}
 
 export default async function ResourceDetailPage(props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
   const resource = await prisma.resource.findUnique({ where: { slug: params.slug } });
   if (!resource || !resource.isPublished) notFound();
 
+  const trail: Crumb[] = [
+    { name: 'Home', path: '/' },
+    { name: 'Resources', path: '/resources' },
+    { name: resource.title, path: `/resources/${resource.slug}` },
+  ];
+
   return (
     <div className="min-h-screen">
       <div className="page-wrap max-w-3xl">
-        <Link href="/resources" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6">
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to resources
-        </Link>
+        <JsonLd data={[resourceSchema(resource), breadcrumbSchema(trail)]} />
+
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <Breadcrumbs trail={trail} />
+          <Link href="/resources" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> All resources
+          </Link>
+        </div>
 
         <article>
           <h1 className="text-2xl sm:text-3xl font-bold mb-3">{resource.title}</h1>
